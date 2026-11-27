@@ -125,7 +125,7 @@ Supabase RPC（DB関数）  ← 重要ロジックはここ
 
 ## 7. 認証・権限
 
-- `@supabase/ssr` で Cookie セッション。`middleware.ts` で未ログインを `/login` へ、プロフィール未作成を `/welcome` へ。
+- `@supabase/ssr` で Cookie セッション。`src/proxy.ts`（Next.js 16 で middleware から改名）で未ログインを `/login` へ、プロフィール未作成を `/welcome` へ。
 - サーバー用クライアントは利用者の JWT で動かす（RLS が効く）。Service Role Key は運営画面の画像アップロード等、サーバー側の限られた箇所のみで使用し、クライアントに出さない。
 
 ## 8. 外部連携の置き場所
