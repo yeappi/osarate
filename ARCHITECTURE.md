@@ -7,7 +7,7 @@
 - Next.js（App Router）+ TypeScript
 - Supabase（Postgres / Auth / Storage）— `pachilife` プロジェクトを共有
 - ホスティング：Vercel（プレビュー環境で確認してから本番）
-- テスト：Vitest（TS）、pgTAP（DB関数、`supabase test db`）
+- テスト：Vitest（TS）、DB関数は素のSQLテスト（`supabase/tests/*_test.sql`、`bash scripts/test-db.sh` でローカル実行）
 
 ## 2. 設計の芯
 
@@ -37,7 +37,9 @@ src/
   config/               # 設定の型と取得（値そのものは DB の oshi_settings）
 supabase/
   migrations/           # 全DB変更（テーブル・RLS・関数・初期データ）
-  tests/                # pgTAP テスト
+  tests/                # SQLテスト（BEGIN…ROLLBACK で自己完結）と _supabase_stub.sql
+scripts/
+  test-db.sh            # 使い捨てPostgresで migrations＋SQLテストを実行
 ```
 
 ### 依存の向き
@@ -73,39 +75,51 @@ Supabase RPC（DB関数）  ← 重要ロジックはここ
 | `oshi_profile_bg` | 背景装飾（sticker 参照・座標） |
 | `oshi_dex_progress` | 図鑑の「一度でも所持した」記録 |
 | `oshi_shop_listings` | SHOP・景品交換所の出品 |
-| `oshi_gifts` | ギフト記録（sticker_id UNIQUE → 還元は個体につき一度） |
 | `oshi_point_ledger` | ポイント変動履歴（delta, balance_after, reason, ref） |
 | `oshi_item_events` | 個体の取得・開封・譲渡履歴 |
-| `oshi_charm_ledger` | ユーザー魅力値の増減履歴（期間ランキング用） |
+| `oshi_charm_ledger` | ユーザー魅力値の増減履歴（期間ランキング用。クライアント非公開） |
 | `oshi_follows` | フォロー |
 | `oshi_requests` | 冪等キー（user_id, request_id）と結果 |
+| `oshi_transfers` | ギフト・プレゼントの記録（ギフトは sticker_id 部分UNIQUE＝還元1回） |
+| `oshi_ball_ledger` | 玉の変動履歴 |
+| `oshi_listing_purchases` | 出品ごとの購入数（1人あたり上限用） |
 | `oshi_pachi_machines` / `oshi_pachi_daily` / `oshi_pachi_secret` | 台・本日の公開統計・非公開設定 |
 
 ## 5. 主要 RPC
 
+実体は `supabase/migrations/*_oshi_rpc.sql` / `*_oshi_pachi.sql`。引数の詳細はそちらを正とする。
+
 | 関数 | 内容 |
 |---|---|
-| `oshi_create_profile` | プロフィール作成＋初期付与 |
-| `oshi_claim_login_bonus` | ログインボーナス判定・付与 |
-| `oshi_buy_sticker(type, qty, mode, to_user)` | 図鑑購入。mode=self/gift |
-| `oshi_buy_listing(listing, mode, to_user)` | SHOP購入 |
-| `oshi_open_sticker` | 開封 |
-| `oshi_send_gift(sticker, to_user, message)` | 未開封ギフト＋還元抽選 |
-| `oshi_send_present(sticker, to_user)` | 開封済みプレゼント（貼付中なら剥がす） |
-| `oshi_place_sticker` / `oshi_move_sticker` / `oshi_remove_sticker` | 貼付・移動・剥がし |
-| `oshi_set_favorites` / `oshi_set_fav_books` / `oshi_set_profile_bg` | 展示設定 |
+| `oshi_create_profile(handle, display_name)` | プロフィール作成＋初期pt・初期シール帳 |
+| `oshi_update_profile(display_name, bio, avatar_url)` | プロフィール編集 |
+| `oshi_my_wallet()` | 本人の pt・玉・連続ログイン・ログボ可否・運営か |
+| `oshi_claim_login_bonus()` | ログボ（日付で冪等） |
+| `oshi_buy_sticker(req, type, qty, open, gift_to, msg)` | 図鑑購入。gift_to 指定で購入＋ギフト |
+| `oshi_buy_listing(req, listing, open, gift_to, msg)` | SHOP購入 |
+| `oshi_open_sticker(sticker)` | 開封 |
+| `oshi_send_gift(req, sticker, to, msg)` | 未開封ギフト＋還元抽選 |
+| `oshi_send_present(req, sticker, to)` | 開封済みプレゼント（貼付・TOP3・背景は自動解除） |
+| `oshi_place_sticker(sticker, book, page, x, y)` / `oshi_remove_sticker` | 貼る・移動・剥がす |
+| `oshi_set_favorites(ids[])` / `oshi_set_fav_books(ids[])` / `oshi_set_profile_bg(json)` | 展示（全置き換え） |
 | `oshi_follow` / `oshi_unfollow` | フォロー |
-| `oshi_pachi_lend` / `oshi_pachi_spin` / `oshi_pachi_cashout` / `oshi_pachi_exchange` | 遊び場 |
-| `oshi_admin_*` | 運営操作（`oshi_admins` を確認） |
+| `oshi_dex_view(user, dex)` | 図鑑の収集状況（非表示シールは所持歴がある場合のみ） |
+| `oshi_ranking(metric, period, me)` | ランキング（上位＋自分の行。列は rnk/user_id/handle/…/value） |
+| `oshi_pachi_lend` / `_spin` / `_cashout` / `_exchange` | 遊び場 |
+| `oshi_admin_*` | 運営（`oshi_admins` 登録者のみ） |
 
-全更新系 RPC は第1引数に `p_request_id uuid` を取り、`oshi_requests` で冪等化する。
+- `req`（p_request_id）を取る関数は冪等。同じIDの再送は前回結果を返す。同じIDを別の関数に使うと `request_id_reused`。
+- エラーは `raise exception '<コード>'`（例：`insufficient_points`, `not_owner`）。UI 向け文言は `src/domain/errors.ts` で対応付ける。
+- `oshi_profiles` は列権限で `points` / `balls` / ログイン情報を隠している。クライアントで `select *` は使えない（列を明示する）。
 
 ### 共通の内部関数（クライアントから呼べない）
 
-- `_oshi_change_points(user, delta, reason, ref)` — 残高更新＋ledger＋応援力加算。マイナス残高なら例外。
-- `_oshi_grant_sticker(user, type, state, source)` — シリアル採番＋個体作成＋図鑑記録＋魅力値加算＋履歴。
-- `_oshi_transfer_sticker(sticker, to_user, kind)` — 所有権移動＋貼付・TOP3・背景の解除＋魅力値増減＋履歴。
-- `_oshi_setting(key)` — 設定取得。
+- `_oshi_change_points` / `_oshi_change_balls` / `_oshi_change_charm` — 残高更新＋履歴。不足なら例外。
+- `_oshi_grant_sticker` / `_oshi_grant_book` — シリアル採番・図鑑記録・魅力値・履歴。
+- `_oshi_transfer_sticker` — 所有権移動＋展示解除＋魅力値移動＋履歴。
+- `_oshi_do_gift` — 還元抽選＋移転＋記録。
+- `_oshi_idem_start` / `_oshi_idem_finish` — 冪等キー。
+- `_oshi_setting` / `_oshi_today` / `_oshi_period_start` — 設定・日付。
 
 ## 6. データの流れ（例：SHOPでギフト購入）
 

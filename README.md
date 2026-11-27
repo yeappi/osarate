@@ -20,4 +20,5 @@ npm run dev
 npm run typecheck
 npm test
 npm run build
+bash scripts/test-db.sh   # DB関数のテスト（ローカルに PostgreSQL サーバーが必要）
 ```
