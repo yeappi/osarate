@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+/* 骨格用の最小スタイル。デザイン工程で作り直す */
+@layer components {
+  .btn { @apply rounded border border-gray-800 bg-white px-3 py-1 text-sm disabled:opacity-50; }
+  .btn-primary { @apply rounded bg-gray-900 px-3 py-1 text-sm text-white disabled:opacity-50; }
+  .input { @apply rounded border px-2 py-1 text-sm; }
+  .card { @apply rounded border bg-white p-3; }
+  .h2 { @apply mb-2 mt-4 text-base font-bold; }
+  .link { @apply text-blue-700 underline; }
+}

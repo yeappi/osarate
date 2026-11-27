@@ -27,7 +27,7 @@ src/
   app/                  # ルーティングと画面（UIのみ）
     (auth)/ (main)/ admin/ api/
   components/           # 汎用UI部品（ボタン、モーダル、シール表示など）
-  features/             # 機能ごとのUI（profile, book-editor, dex, shop, bag, gifts, ranking, search）
+  features/             # 機能ごとのUI部品（profile, book-editor, dex, gift）
   server/
     services/           # 業務の入口。RPC呼び出しとエラー変換のみ（"use server" アクション）
     queries/            # 読み取り専用の取得関数
@@ -57,7 +57,7 @@ Supabase RPC（DB関数）  ← 重要ロジックはここ
 
 ## 4. DB（すべて `public` スキーマ、接頭辞 `oshi_`）
 
-既存アプリと同じ「接頭辞方式」に揃える。独自スキーマにすると Data API の公開スキーマ設定（プロジェクト全体の設定）を変える必要があるため避ける。ストレージは専用バケット `oshi-stickers`。
+既存アプリと同じ「接頭辞方式」に揃える。独自スキーマにすると Data API の公開スキーマ設定（プロジェクト全体の設定）を変える必要があるため避ける。ストレージは専用バケット `oshi-stickers`（公開読み取り・2MB・画像のみ。書き込みは運営画面から Service Role で行い、storage.objects にポリシーは追加しない）。
 
 | テーブル | 役割 |
 |---|---|
@@ -120,6 +120,14 @@ Supabase RPC（DB関数）  ← 重要ロジックはここ
 - `_oshi_do_gift` — 還元抽選＋移転＋記録。
 - `_oshi_idem_start` / `_oshi_idem_finish` — 冪等キー。
 - `_oshi_setting` / `_oshi_today` / `_oshi_period_start` — 設定・日付。
+
+## 5.5 画面からの呼び出し方
+
+- フォーム操作はすべて `components/ActionForm.tsx` 経由。Server Action（`(prev, formData) => ActionState`）を呼び、結果メッセージを表示、成功時に `router.refresh()`。
+- **冪等キー**：ActionForm がフォームごとに `requestId` を自動で付け、成功するまで同じ値を使い回す（失敗後の再送・連打は同じキー）。成功したら新しいキーに切り替える。
+- シール帳エディタ・背景エディタ（クライアント部品）は `placeSticker` / `removeSticker` / `saveProfileBg` を直接呼ぶ。
+- 宛先は画面では `@handle` で入力し、Server Action 側で `user_id` に変換する。
+- RPC のエラーコードは `server/action.ts` の `callRpc` で日本語に変換される。
 
 ## 6. データの流れ（例：SHOPでギフト購入）
 
