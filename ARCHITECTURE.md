@@ -147,6 +147,8 @@ Supabase RPC（DB関数）  ← 重要ロジックはここ
 
 ## 7. 認証・権限
 
+- 登録確認・パスワード再設定のメールは **implicit フロー**で発行し（`server/supabase/implicit.ts`）、戻り先は `/auth/confirm`（クエリなし）。トークンは URL の # 以降に入るため、`/auth/confirm` のクライアント側で読み取り、`adoptSessionAction` で Cookie セッションにする。PKCE だとメールを別のブラウザ・アプリで開いたときに失敗するため。Supabase の Redirect URLs には `https://<本番ドメイン>/auth/**` を登録する。
+- メール送信の回数制限（429）は画面に表示する。登録済みかどうかは表示しない。
 - `@supabase/ssr` で Cookie セッション。`src/proxy.ts`（Next.js 16 で middleware から改名）で未ログインを `/login` へ、プロフィール未作成を `/welcome` へ。
 - サーバー用クライアントは利用者の JWT で動かす（RLS が効く）。Service Role Key は運営画面の画像アップロード等、サーバー側の限られた箇所のみで使用し、クライアントに出さない。
 
