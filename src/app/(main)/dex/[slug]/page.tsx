@@ -1,18 +1,18 @@
-import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { DEXES } from "@/config/app";
-import { DexGrid } from "@/features/dex/DexGrid";
-import { getDex } from "@/server/queries/catalog";
-import { requireMe } from "@/server/queries/me";
+"use client";
 
-export default async function MyDexPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { Loading } from "@/components/Loading";
+import { DEXES } from "@/config/app";
+import { useDex, useMe } from "@/client/queries";
+import { DexGrid } from "@/features/dex/DexGrid";
+
+export default function MyDexPage() {
+  const { slug } = useParams<{ slug: string }>();
   const dex = DEXES.find((d) => d.slug === slug);
-  if (!dex) notFound();
-  const me = await requireMe();
-  if (!me) redirect("/welcome");
-  const entries = await getDex(me.user.id, slug);
-  const owned = entries.filter((e) => e.owned).length;
+  const me = useMe();
+  const entries = useDex(me.data?.userId ?? null, slug);
+  if (!dex) return <p className="text-sm">図鑑が見つかりません</p>;
 
   return (
     <div>
@@ -23,8 +23,16 @@ export default async function MyDexPage({ params }: { params: Promise<{ slug: st
           </Link>
         ))}
       </nav>
-      <h1 className="h2">図鑑：{dex.name}（{owned} / {entries.length}）</h1>
-      <DexGrid entries={entries} mode="self" />
+      {!entries.data ? (
+        <Loading error={entries.error} />
+      ) : (
+        <>
+          <h1 className="h2">
+            図鑑：{dex.name}（{entries.data.filter((e) => e.owned).length} / {entries.data.length}）
+          </h1>
+          <DexGrid entries={entries.data} mode="self" />
+        </>
+      )}
     </div>
   );
 }

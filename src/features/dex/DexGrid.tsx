@@ -1,8 +1,10 @@
+"use client";
+
 import { ActionForm } from "@/components/ActionForm";
 import { StickerView } from "@/components/StickerView";
 import { formatPt, rarityLabel } from "@/domain/format";
 import type { DexEntry } from "@/domain/types";
-import { buyStickerAction } from "@/server/services/shop";
+import { buySticker } from "@/client/mutations";
 
 type Props =
   | { entries: DexEntry[]; mode: "self" }
@@ -26,7 +28,7 @@ export function DexGrid(props: Props) {
               魅力値 {e.charm}・{formatPt(e.price)}・{e.owned ? "収集済み" : "未収集"}
             </div>
             {e.dex_purchasable && props.mode === "self" && (
-              <ActionForm action={buyStickerAction} submitLabel="買う">
+              <ActionForm action={buySticker} submitLabel="買う">
                 <input type="hidden" name="typeId" value={e.type_id} />
                 <input name="qty" type="number" min={1} max={10} defaultValue={1} className="input w-14" />
                 <label className="text-xs">
@@ -35,7 +37,7 @@ export function DexGrid(props: Props) {
               </ActionForm>
             )}
             {e.dex_purchasable && props.mode === "gift" && (
-              <ActionForm action={buyStickerAction} submitLabel="ギフトする" confirm={`${formatPt(e.price)}でギフトしますか？`}>
+              <ActionForm action={buySticker} submitLabel="ギフトする" confirm={`${formatPt(e.price)}でギフトしますか？`}>
                 <input type="hidden" name="typeId" value={e.type_id} />
                 <input type="hidden" name="giftTo" value={props.giftToHandle} />
                 <input name="message" maxLength={100} placeholder="メッセージ（任意）" className="input w-full" />

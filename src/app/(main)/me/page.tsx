@@ -1,8 +1,11 @@
-import { redirect } from "next/navigation";
-import { requireMe } from "@/server/queries/me";
+"use client";
 
-export default async function MePage() {
-  const me = await requireMe();
-  if (!me) redirect("/welcome");
-  redirect(`/u/${me.profile.handle}`);
+import { Loading } from "@/components/Loading";
+import { useMe } from "@/client/queries";
+import { ProfileView } from "@/features/profile/ProfileView";
+
+export default function MePage() {
+  const me = useMe();
+  if (!me.data?.profile) return <Loading error={me.error} />;
+  return <ProfileView profile={me.data.profile} />;
 }

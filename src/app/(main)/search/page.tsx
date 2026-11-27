@@ -1,13 +1,12 @@
+"use client";
+
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { useState } from "react";
+import { Loading } from "@/components/Loading";
 import { RANKING_METRICS, RANKING_PERIODS } from "@/config/app";
+import { useFollowing, useMe, useRanking, useSearch } from "@/client/queries";
 import { formatNum } from "@/domain/format";
 import type { PublicProfile } from "@/domain/types";
-import { getRanking } from "@/server/queries/catalog";
-import { requireMe } from "@/server/queries/me";
-import { listFollowing, searchProfiles } from "@/server/queries/profiles";
-
-type SP = Promise<{ q?: string; tab?: string; metric?: string; period?: string }>;
 
 function UserRow({ p, right }: { p: Pick<PublicProfile, "handle" | "display_name">; right?: React.ReactNode }) {
   return (
@@ -22,75 +21,93 @@ function UserRow({ p, right }: { p: Pick<PublicProfile, "handle" | "display_name
   );
 }
 
-export default async function SearchPage({ searchParams }: { searchParams: SP }) {
-  const sp = await searchParams;
-  const me = await requireMe();
-  if (!me) redirect("/welcome");
-  const tab = sp.tab ?? "ranking";
-  const metric = RANKING_METRICS.some((m) => m.key === sp.metric) ? sp.metric! : "charm";
-  const period = RANKING_PERIODS.some((p) => p.key === sp.period) ? sp.period! : "day";
+// タブ・絞り込みは画面内の状態で切り替える（URL を変えないのでサーバー待ちが起きない）
+export default function SearchPage() {
+  const me = useMe();
+  const [tab, setTab] = useState<"ranking" | "following" | "search">("ranking");
+  const [input, setInput] = useState("");
+  const [q, setQ] = useState("");
+  const [metric, setMetric] = useState<string>("charm");
+  const [period, setPeriod] = useState<string>("day");
+  const userId = me.data?.userId ?? null;
 
   return (
     <div>
-      <form className="mb-3 flex gap-2">
-        <input name="q" defaultValue={sp.q ?? ""} placeholder="ユーザーを検索" className="input flex-1" />
-        <input type="hidden" name="tab" value="search" />
+      <form
+        className="mb-3 flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setQ(input.trim());
+          setTab("search");
+        }}
+      >
+        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="ユーザーを検索" className="input flex-1" />
         <button className="btn">検索</button>
       </form>
       <nav className="mb-3 flex gap-3 text-sm">
-        {[
-          ["ranking", "ランキング"],
-          ["following", "フォロー中"],
-        ].map(([k, label]) => (
-          <Link key={k} href={`/search?tab=${k}`} className={tab === k ? "font-bold" : "link"}>
+        {(
+          [
+            ["ranking", "ランキング"],
+            ["following", "フォロー中"],
+          ] as const
+        ).map(([k, label]) => (
+          <button key={k} onClick={() => setTab(k)} className={tab === k ? "font-bold" : "link"}>
             {label}
-          </Link>
+          </button>
         ))}
       </nav>
 
-      {tab === "search" && <SearchResults q={sp.q ?? ""} />}
-      {tab === "following" && <Following userId={me.user.id} />}
-      {tab === "ranking" && <Ranking metric={metric} period={period} me={me.user.id} />}
+      {tab === "search" && <SearchResults q={q} />}
+      {tab === "following" && <Following userId={userId} />}
+      {tab === "ranking" && (
+        <div>
+          <div className="mb-2 flex flex-wrap gap-3 text-sm">
+            {RANKING_METRICS.map((m) => (
+              <button key={m.key} onClick={() => setMetric(m.key)} className={m.key === metric ? "font-bold" : "link"}>
+                {m.label}
+              </button>
+            ))}
+            <span>｜</span>
+            {RANKING_PERIODS.map((p) => (
+              <button key={p.key} onClick={() => setPeriod(p.key)} className={p.key === period ? "font-bold" : "link"}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <Ranking metric={metric} period={period} me={userId} />
+        </div>
+      )}
     </div>
   );
 }
 
-async function SearchResults({ q }: { q: string }) {
-  const users = await searchProfiles(q);
-  if (users.length === 0) return <p className="text-sm text-gray-500">見つかりませんでした</p>;
-  return <ul className="space-y-2">{users.map((u) => <UserRow key={u.user_id} p={u} />)}</ul>;
+function SearchResults({ q }: { q: string }) {
+  const users = useSearch(q);
+  if (!q) return <p className="text-sm text-gray-500">ユーザーIDか表示名で検索</p>;
+  if (!users.data) return <Loading error={users.error} />;
+  if (users.data.length === 0) return <p className="text-sm text-gray-500">見つかりませんでした</p>;
+  return <ul className="space-y-2">{users.data.map((u) => <UserRow key={u.user_id} p={u} />)}</ul>;
 }
 
-async function Following({ userId }: { userId: string }) {
-  const users = await listFollowing(userId);
-  if (users.length === 0) return <p className="text-sm text-gray-500">まだフォローしていません</p>;
-  return <ul className="space-y-2">{users.map((u) => <UserRow key={u.user_id} p={u} />)}</ul>;
+function Following({ userId }: { userId: string | null }) {
+  const users = useFollowing(userId);
+  if (!users.data) return <Loading error={users.error} />;
+  if (users.data.length === 0) return <p className="text-sm text-gray-500">まだフォローしていません</p>;
+  return <ul className="space-y-2">{users.data.map((u) => <UserRow key={u.user_id} p={u} />)}</ul>;
 }
 
-async function Ranking({ metric, period, me }: { metric: string; period: string; me: string }) {
-  const rows = await getRanking(metric, period, me);
-  const mine = rows.find((r) => r.user_id === me);
+function Ranking({ metric, period, me }: { metric: string; period: string; me: string | null }) {
+  const rows = useRanking(metric, period, me);
+  if (!rows.data) return <Loading error={rows.error} />;
+  const mine = rows.data.find((r) => r.user_id === me);
   return (
     <div>
-      <div className="mb-2 flex flex-wrap gap-3 text-sm">
-        {RANKING_METRICS.map((m) => (
-          <Link key={m.key} href={`/search?tab=ranking&metric=${m.key}&period=${period}`} className={m.key === metric ? "font-bold" : "link"}>
-            {m.label}
-          </Link>
-        ))}
-        <span>｜</span>
-        {RANKING_PERIODS.map((p) => (
-          <Link key={p.key} href={`/search?tab=ranking&metric=${metric}&period=${p.key}`} className={p.key === period ? "font-bold" : "link"}>
-            {p.label}
-          </Link>
-        ))}
-      </div>
       <p className="mb-2 text-sm">あなた：{mine ? `${mine.rnk}位（${formatNum(mine.value)}）` : "圏外"}</p>
-      {rows.length === 0 ? (
+      {rows.data.length === 0 ? (
         <p className="text-sm text-gray-500">まだランキングがありません</p>
       ) : (
         <ol className="space-y-2">
-          {rows.map((r) => (
+          {rows.data.map((r) => (
             <UserRow key={r.user_id} p={r} right={<span className="font-bold">{r.rnk}位　{formatNum(r.value)}</span>} />
           ))}
         </ol>

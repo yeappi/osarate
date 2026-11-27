@@ -1,18 +1,20 @@
+"use client";
+
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/ActionForm";
+import { Loading } from "@/components/Loading";
 import { StickerView } from "@/components/StickerView";
 import { DEXES } from "@/config/app";
+import { sendPresent } from "@/client/mutations";
+import { useBooks, useMe, useStorage } from "@/client/queries";
 import { RecipientFields } from "@/features/gift/RecipientFields";
-import { listBooks, listStorage } from "@/server/queries/items";
-import { requireMe } from "@/server/queries/me";
-import { sendPresentAction } from "@/server/services/items";
 
 // シール：保管（開封済み・未使用）とシール帳の一覧
-export default async function StickersPage() {
-  const me = await requireMe();
-  if (!me) redirect("/welcome");
-  const [storage, books] = await Promise.all([listStorage(me.user.id), listBooks(me.user.id)]);
+export default function StickersPage() {
+  const me = useMe();
+  const uid = me.data?.userId ?? null;
+  const storage = useStorage(uid);
+  const books = useBooks(uid);
 
   return (
     <div>
@@ -25,36 +27,45 @@ export default async function StickersPage() {
       </nav>
 
       <h1 className="h2">シール帳</h1>
-      <ul className="grid grid-cols-3 gap-2">
-        {books.map((b) => (
-          <li key={b.id}>
-            <Link href={`/stickers/books/${b.id}`} className="card block text-center text-sm">
-              {b.type.name}
-              <div className="text-xs text-gray-500">No.{b.serial_no}・{b.type.page_count}P</div>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {!books.data ? (
+        <Loading error={books.error} />
+      ) : (
+        <ul className="grid grid-cols-3 gap-2">
+          {books.data.map((b) => (
+            <li key={b.id}>
+              <Link href={`/stickers/books/${b.id}`} className="card block text-center text-sm">
+                {b.type.name}
+                <div className="text-xs text-gray-500">No.{b.serial_no}・{b.type.page_count}P</div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
 
-      <h2 className="h2">保管（{storage.length}枚）</h2>
-      {storage.length === 0 && <p className="text-sm text-gray-500">開封済みのシールはここに入ります</p>}
-      <ul className="space-y-2">
-        {storage.map((s) => (
-          <li key={s.id} className="card flex items-center gap-3">
-            <StickerView name={s.type.name} imagePath={s.type.image_path} w={s.type.width} h={s.type.height} fixed={48} />
-            <div className="flex-1 text-sm">
-              {s.type.name} <span className="text-xs text-gray-500">No.{s.serial_no}</span>
-              <details className="mt-1">
-                <summary className="cursor-pointer text-xs link">プレゼントする</summary>
-                <ActionForm action={sendPresentAction} submitLabel="プレゼント" confirm="このシールをプレゼントしますか？">
-                  <input type="hidden" name="stickerId" value={s.id} />
-                  <RecipientFields />
-                </ActionForm>
-              </details>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <h2 className="h2">保管{storage.data && `（${storage.data.length}枚）`}</h2>
+      {!storage.data ? (
+        <Loading error={storage.error} />
+      ) : storage.data.length === 0 ? (
+        <p className="text-sm text-gray-500">開封済みのシールはここに入ります</p>
+      ) : (
+        <ul className="space-y-2">
+          {storage.data.map((s) => (
+            <li key={s.id} className="card flex items-center gap-3">
+              <StickerView name={s.type.name} imagePath={s.type.image_path} w={s.type.width} h={s.type.height} fixed={48} />
+              <div className="flex-1 text-sm">
+                {s.type.name} <span className="text-xs text-gray-500">No.{s.serial_no}</span>
+                <details className="mt-1">
+                  <summary className="link cursor-pointer text-xs">プレゼントする</summary>
+                  <ActionForm action={sendPresent} submitLabel="プレゼント" confirm="このシールをプレゼントしますか？">
+                    <input type="hidden" name="stickerId" value={s.id} />
+                    <RecipientFields />
+                  </ActionForm>
+                </details>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

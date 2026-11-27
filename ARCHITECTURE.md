@@ -24,17 +24,21 @@
 
 ```
 src/
-  app/                  # ルーティングと画面（UIのみ）
-    (auth)/ (main)/ admin/ api/
-  components/           # 汎用UI部品（ボタン、モーダル、シール表示など）
+  app/                  # ルーティングと画面。ログイン後の画面はクライアントコンポーネントで静的配信
+  components/           # 汎用UI部品（ActionForm, StickerView, BottomNav, Loading）
   features/             # 機能ごとのUI部品（profile, book-editor, dex, gift）
+  client/
+    supabase.ts         # ブラウザ用 Supabase クライアント
+    store.ts            # データキャッシュ（useQuery / invalidateAll）
+    queries.ts          # 読み取り（use〇〇 フック）
+    mutations.ts        # 書き込み（DB関数の呼び出し）
   server/
-    services/           # 業務の入口。RPC呼び出しとエラー変換のみ（"use server" アクション）
-    queries/            # 読み取り専用の取得関数
-    supabase/           # クライアント生成（server / browser / admin）
-  domain/               # 純粋関数・型（表示用計算、バリデーション、エラーコード）
-  minigame/             # パチ屋：UI と services を自己完結させる
-  config/               # 設定の型と取得（値そのものは DB の oshi_settings）
+    services/           # サーバーでしかできない処理のみ（認証メール送信、運営の画像アップロード）
+    supabase/           # サーバー用クライアント（Cookie / Service Role / メールリンク用）
+    action.ts           # Server Action 用の小道具
+  domain/               # 純粋関数・型（表示用計算、エラーコード、ActionState）
+  minigame/             # パチ屋：UI・取得・操作を自己完結
+  config/               # 定数（調整する数値は DB の oshi_settings）
 supabase/
   migrations/           # 全DB変更（テーブル・RLS・関数・初期データ）
   tests/                # SQLテスト（BEGIN…ROLLBACK で自己完結）と _supabase_stub.sql
@@ -47,12 +51,14 @@ scripts/
 ```
 app / features / minigame(UI)
         ↓
-server/services , server/queries
+client/queries , client/mutations   ← ブラウザから直接 Supabase へ
         ↓
-Supabase RPC（DB関数）  ← 重要ロジックはここ
+Supabase：読み取りは RLS、書き込みは DB関数（RPC） ← 重要ロジックはここ
 ```
 
-- UI → services のみ呼ぶ。UI から Supabase を直接呼ばない（読み取りも queries 経由）。
+- **安全性は DB が担保する**（RLS と security definer 関数）。ブラウザから直接呼んでも、残高・所有・権限はごまかせない。
+- 画面はサーバーで組み立てない（タブ切り替えのたびにサーバー往復が発生して遅くなるため）。
+- サーバーを使うのは、Service Role が必要な処理と認証メールの送信のみ。
 - `domain/` はどこからでも使ってよいが、DBやReactに依存しない。
 
 ## 4. DB（すべて `public` スキーマ、接頭辞 `oshi_`）
@@ -123,17 +129,18 @@ Supabase RPC（DB関数）  ← 重要ロジックはここ
 
 ## 5.5 画面からの呼び出し方
 
-- フォーム操作はすべて `components/ActionForm.tsx` 経由。Server Action（`(prev, formData) => ActionState`）を呼び、結果メッセージを表示、成功時に `router.refresh()`。
-- **冪等キー**：ActionForm がフォームごとに `requestId` を自動で付け、成功するまで同じ値を使い回す（失敗後の再送・連打は同じキー）。成功したら新しいキーに切り替える。
-- シール帳エディタ・背景エディタ（クライアント部品）は `placeSticker` / `removeSticker` / `saveProfileBg` を直接呼ぶ。
-- 宛先は画面では `@handle` で入力し、Server Action 側で `user_id` に変換する。
-- RPC のエラーコードは `server/action.ts` の `callRpc` で日本語に変換される。
+- 読み取りは `client/queries.ts` の `useXxx()`。同じキーのデータは画面をまたいで使い回して即表示し、画面を開くたびに裏で取り直す（stale-while-revalidate）。
+- 書き込みは `client/mutations.ts`。成功したら `invalidateAll()` で表示中のデータを取り直す（それ以外は次に開いたとき取り直される）。**新しい書き込みを追加したら必ず mutations.ts 経由にすること**（取り直し漏れを防ぐ）。
+- フォームは `components/ActionForm.tsx`。冪等キー `requestId` をフォームごとに自動で付け、成功するまで同じ値を使い回す。
+- 宛先は画面では `@handle` で入力し、mutations 側で `user_id` に変換する。
+- RPC のエラーコードは `domain/errors.ts` で日本語に変換する。
+- 「古いキャッシュで判断してはいけない処理」（ログイン状態による画面遷移など）は `useQuery().fresh` を見る。
 
 ## 6. データの流れ（例：SHOPでギフト購入）
 
 ```
 [SHOP画面] 「ギフトする」→ 相手選択 → 確定
-   → services.shop.buyListing({listingId, mode:'gift', to, requestId})
+   → client/mutations.buyListing(formData: listingId, giftTo=@handle, requestId)
    → rpc oshi_buy_listing
        1. 冪等チェック
        2. 在庫・期間・上限チェック（行ロック）
@@ -142,14 +149,14 @@ Supabase RPC（DB関数）  ← 重要ロジックはここ
        5. oshi_send_gift 相当の処理（還元抽選 → _oshi_change_points(受け手, +還元)）
        6. _oshi_transfer_sticker(→受け手)
        7. 結果を oshi_requests に保存して返す
-   → 画面更新
+   → invalidateAll() で表示中のデータを取り直し
 ```
 
 ## 7. 認証・権限
 
 - 登録確認・パスワード再設定のメールは **implicit フロー**で発行し（`server/supabase/implicit.ts`）、戻り先は `/auth/confirm`（クエリなし）。トークンは URL の # 以降に入るため、`/auth/confirm` のクライアント側で読み取り、`adoptSessionAction` で Cookie セッションにする。PKCE だとメールを別のブラウザ・アプリで開いたときに失敗するため。Supabase の Redirect URLs には `https://<本番ドメイン>/auth/**` を登録する。
 - メール送信の回数制限（429）は画面に表示する。登録済みかどうかは表示しない。
-- `@supabase/ssr` で Cookie セッション。`src/proxy.ts`（Next.js 16 で middleware から改名）で未ログインを `/login` へ、プロフィール未作成を `/welcome` へ。
+- `@supabase/ssr` で Cookie セッション（ブラウザ・サーバー共通）。未ログイン・プロフィール未作成の振り分けは `(main)/layout.tsx`（クライアント）で行う。proxy（旧 middleware）は使わない（毎リクエストのサーバー往復を避けるため）。
 - サーバー用クライアントは利用者の JWT で動かす（RLS が効く）。Service Role Key は運営画面の画像アップロード等、サーバー側の限られた箇所のみで使用し、クライアントに出さない。
 
 ## 8. 外部連携の置き場所

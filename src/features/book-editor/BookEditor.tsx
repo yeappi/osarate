@@ -1,11 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { StickerView } from "@/components/StickerView";
 import { placeCentered } from "@/domain/canvas";
 import type { CanvasItem } from "@/domain/types";
-import { placeSticker, removeSticker } from "@/server/services/items";
+import { placeSticker, removeSticker } from "@/client/mutations";
 import { CanvasBoard } from "./CanvasBoard";
 
 type StorageSticker = { sticker_id: string; name: string; image_path: string | null; w: number; h: number };
@@ -25,7 +24,6 @@ type Props = {
  * 回転・重ね順・拡縮は MVP 外。
  */
 export function BookEditor({ bookId, pageCount, canvas, items, storage, editable }: Props) {
-  const router = useRouter();
   const [page, setPage] = useState(1);
   const [picked, setPicked] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -40,10 +38,7 @@ export function BookEditor({ bookId, pageCount, canvas, items, storage, editable
     startTransition(async () => {
       const r = await fn();
       setMessage(r?.message ?? null);
-      if (r?.ok) {
-        setPicked(null);
-        router.refresh();
-      }
+      if (r?.ok) setPicked(null);
     });
   }
 

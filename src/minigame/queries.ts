@@ -1,43 +1,34 @@
-import { getSetting } from "@/server/queries/catalog";
-import { createSupabaseServer } from "@/server/supabase/server";
+"use client";
 
-export type MachineBoard = {
-  id: number;
-  name: string;
-  spins: number;
-  hits: number;
-  big_hits: number;
-  max_payout: number;
-};
+import { useSetting } from "@/client/queries";
+import { useQuery } from "@/client/store";
+import { must, sb } from "@/client/supabase";
+
+export type MachineBoard = { id: number; name: string; spins: number; hits: number; big_hits: number; max_payout: number };
 
 /** 本日の台の公開統計（見極め材料） */
-export async function getMachineBoard(): Promise<MachineBoard[]> {
-  const supabase = await createSupabaseServer();
-  const tz = (await getSetting<string>("timezone")) ?? "Asia/Tokyo";
-  const today = new Date().toLocaleDateString("sv-SE", { timeZone: tz }); // YYYY-MM-DD
-  const [{ data: machines }, { data: daily }] = await Promise.all([
-    supabase.from("oshi_pachi_machines").select("id, name").order("sort"),
-    supabase.from("oshi_pachi_daily").select("machine_id, spins, hits, big_hits, max_payout").eq("day", today),
-  ]);
-  return (machines ?? []).map((m) => {
-    const d = (daily ?? []).find((x) => x.machine_id === m.id);
-    return {
-      id: m.id as number,
-      name: m.name as string,
-      spins: (d?.spins as number) ?? 0,
-      hits: (d?.hits as number) ?? 0,
-      big_hits: (d?.big_hits as number) ?? 0,
-      max_payout: (d?.max_payout as number) ?? 0,
-    };
+export function useMachineBoard() {
+  const tz = useSetting<string>("timezone");
+  const zone = tz.data ?? "Asia/Tokyo";
+  return useQuery(tz.data === undefined ? null : `pachi:board:${zone}`, async (): Promise<MachineBoard[]> => {
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: zone }); // YYYY-MM-DD
+    const [machines, daily] = await Promise.all([
+      sb().from("oshi_pachi_machines").select("id, name").order("sort"),
+      sb().from("oshi_pachi_daily").select("machine_id, spins, hits, big_hits, max_payout").eq("day", today),
+    ]);
+    type D = { machine_id: number; spins: number; hits: number; big_hits: number; max_payout: number };
+    const ds = (must(daily) as D[] | null) ?? [];
+    return ((must(machines) as { id: number; name: string }[] | null) ?? []).map((m) => {
+      const d = ds.find((x) => x.machine_id === m.id);
+      return { id: m.id, name: m.name, spins: d?.spins ?? 0, hits: d?.hits ?? 0, big_hits: d?.big_hits ?? 0, max_payout: d?.max_payout ?? 0 };
+    });
   });
 }
 
-export async function getSpinConfig() {
-  const [cost, max, rateIn, rateOut] = await Promise.all([
-    getSetting<number>("pachi_spin_cost"),
-    getSetting<number>("pachi_max_spins_per_request"),
-    getSetting<number>("pachi_ball_rate_in"),
-    getSetting<number>("pachi_ball_rate_out"),
-  ]);
-  return { cost: cost ?? 10, max: max ?? 10, rateIn: rateIn ?? 1, rateOut: rateOut ?? 1 };
+export function useSpinConfig() {
+  const cost = useSetting<number>("pachi_spin_cost");
+  const max = useSetting<number>("pachi_max_spins_per_request");
+  const rateIn = useSetting<number>("pachi_ball_rate_in");
+  const rateOut = useSetting<number>("pachi_ball_rate_out");
+  return { cost: cost.data ?? 10, max: max.data ?? 10, rateIn: rateIn.data ?? 1, rateOut: rateOut.data ?? 1 };
 }

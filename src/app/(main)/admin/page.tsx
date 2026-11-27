@@ -1,27 +1,32 @@
-import { notFound } from "next/navigation";
+"use client";
+
 import { ActionForm } from "@/components/ActionForm";
-import { formatNum } from "@/domain/format";
-import { listBookTypes, listListings, listStickerTypes } from "@/server/queries/catalog";
-import { requireMe } from "@/server/queries/me";
+import { Loading } from "@/components/Loading";
 import {
-  createBookTypeAction,
-  createListingAction,
-  createStickerTypeAction,
-  grantAction,
-  setListingActiveAction,
-  setStickerTypeActiveAction,
-} from "@/server/services/admin";
+  adminCreateBookType,
+  adminCreateListing,
+  adminCreateStickerType,
+  adminGrant,
+  adminSetListingActive,
+  adminSetStickerTypeActive,
+} from "@/client/mutations";
+import { useAllTypes, useListings, useMe } from "@/client/queries";
+import { formatNum } from "@/domain/format";
+import { uploadStickerImage } from "@/server/services/admin";
+
+const createStickerType = adminCreateStickerType(uploadStickerImage);
 
 // 運営画面（最小限）。権限は DB 関数側でも確認している
-export default async function AdminPage() {
-  const me = await requireMe();
-  if (!me?.wallet.is_admin) notFound();
-  const [stickerTypes, bookTypes, shop, prize] = await Promise.all([
-    listStickerTypes(),
-    listBookTypes(),
-    listListings("shop"),
-    listListings("prize"),
-  ]);
+export default function AdminPage() {
+  const me = useMe();
+  const types = useAllTypes();
+  const shopQ = useListings("shop");
+  const prizeQ = useListings("prize");
+  if (me.data?.wallet && !me.data.wallet.is_admin) return <p className="text-sm">権限がありません</p>;
+  if (!types.data || !shopQ.data || !prizeQ.data) return <Loading error={types.error ?? shopQ.error ?? prizeQ.error} />;
+  const { stickerTypes, bookTypes } = types.data;
+  const shop = shopQ.data;
+  const prize = prizeQ.data;
   const col = "flex flex-col gap-1 text-sm";
 
   return (
@@ -30,7 +35,7 @@ export default async function AdminPage() {
 
       <section>
         <h2 className="h2">シール種別を作成</h2>
-        <ActionForm action={createStickerTypeAction} submitLabel="作成" className={col}>
+        <ActionForm action={createStickerType} submitLabel="作成" className={col}>
           <select name="dex" className="input">
             <option value="main">メイン図鑑</option>
             <option value="elite">精鋭図鑑</option>
@@ -60,7 +65,7 @@ export default async function AdminPage() {
                 #{t.id} [{t.dex_id}] {t.name} 魅力値{t.charm} 発行{t.issued_count}
                 {t.is_active ? "" : "（停止中）"}
               </span>
-              <ActionForm action={setStickerTypeActiveAction} submitLabel={t.is_active ? "停止" : "再開"}>
+              <ActionForm action={adminSetStickerTypeActive} submitLabel={t.is_active ? "停止" : "再開"}>
                 <input type="hidden" name="typeId" value={t.id} />
                 <input type="hidden" name="active" value={t.is_active ? "false" : "true"} />
               </ActionForm>
@@ -71,7 +76,7 @@ export default async function AdminPage() {
 
       <section>
         <h2 className="h2">シール帳種別を作成</h2>
-        <ActionForm action={createBookTypeAction} submitLabel="作成" className={col}>
+        <ActionForm action={adminCreateBookType} submitLabel="作成" className={col}>
           <input name="name" required placeholder="名前" className="input" />
           <div className="flex gap-1">
             <input name="pageCount" type="number" required min={1} max={50} placeholder="ページ数" className="input w-24" />
@@ -88,7 +93,7 @@ export default async function AdminPage() {
 
       <section>
         <h2 className="h2">出品（SHOP / 景品）</h2>
-        <ActionForm action={createListingAction} submitLabel="出品" className={col}>
+        <ActionForm action={adminCreateListing} submitLabel="出品" className={col}>
           <div className="flex gap-1">
             <select name="venue" className="input"><option value="shop">SHOP（pt）</option><option value="prize">景品（玉）</option></select>
             <select name="kind" className="input"><option value="sticker">シール</option><option value="book">シール帳</option></select>
@@ -109,7 +114,7 @@ export default async function AdminPage() {
                 #{l.id} [{l.venue}] {l.sticker_type?.name ?? l.book_type?.name} {formatNum(l.price)} 販売{l.sold_count}
                 {l.stock != null && `/${l.stock}`}
               </span>
-              <ActionForm action={setListingActiveAction} submitLabel="停止">
+              <ActionForm action={adminSetListingActive} submitLabel="停止">
                 <input type="hidden" name="listingId" value={l.id} />
                 <input type="hidden" name="active" value="false" />
               </ActionForm>
@@ -120,7 +125,7 @@ export default async function AdminPage() {
 
       <section>
         <h2 className="h2">付与</h2>
-        <ActionForm action={grantAction} submitLabel="付与" className={col}>
+        <ActionForm action={adminGrant} submitLabel="付与" className={col}>
           <input name="to" required placeholder="@ユーザーID" className="input" />
           <div className="flex gap-1">
             <select name="kind" className="input">

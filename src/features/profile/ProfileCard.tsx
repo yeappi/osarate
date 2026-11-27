@@ -1,9 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import { ActionForm } from "@/components/ActionForm";
 import { StickerView } from "@/components/StickerView";
 import { formatNum } from "@/domain/format";
 import type { CanvasItem, PublicProfile } from "@/domain/types";
-import { followAction } from "@/server/services/profile";
+import { follow as followAction } from "@/client/mutations";
 
 type Props = {
   profile: PublicProfile;

@@ -1,12 +1,17 @@
+"use client";
+
 import { ActionForm } from "@/components/ActionForm";
 import { StickerView } from "@/components/StickerView";
 import { formatPt } from "@/domain/format";
-import { listListings } from "@/server/queries/catalog";
-import { buyListingAction } from "@/server/services/shop";
+import { Loading } from "@/components/Loading";
+import { buyListing } from "@/client/mutations";
+import { useListings } from "@/client/queries";
 
 // SHOP：限定品のみ。基本のシールは図鑑から購入する
-export default async function ShopPage() {
-  const listings = await listListings("shop");
+export default function ShopPage() {
+  const q = useListings("shop");
+  if (!q.data) return <Loading error={q.error} />;
+  const listings = q.data;
   return (
     <div>
       <h1 className="h2">SHOP（限定品）</h1>
@@ -35,7 +40,7 @@ export default async function ShopPage() {
                   </div>
                 </div>
               </div>
-              <ActionForm action={buyListingAction} submitLabel="自分用に買う">
+              <ActionForm action={buyListing} submitLabel="自分用に買う">
                 <input type="hidden" name="listingId" value={l.id} />
                 {st && (
                   <label className="text-xs">
@@ -44,7 +49,7 @@ export default async function ShopPage() {
                 )}
               </ActionForm>
               {st && (
-                <ActionForm action={buyListingAction} submitLabel="ギフトする" confirm={`${formatPt(l.price)}でギフトしますか？`}>
+                <ActionForm action={buyListing} submitLabel="ギフトする" confirm={`${formatPt(l.price)}でギフトしますか？`}>
                   <input type="hidden" name="listingId" value={l.id} />
                   <input name="giftTo" required placeholder="贈り先 @ユーザーID" className="input w-40" />
                   <input name="message" maxLength={100} placeholder="メッセージ（任意）" className="input flex-1" />

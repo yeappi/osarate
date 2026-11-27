@@ -1,16 +1,28 @@
+"use client";
+
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { ActionForm } from "@/components/ActionForm";
 import { BottomNav } from "@/components/BottomNav";
+import { Loading } from "@/components/Loading";
+import { claimLoginBonus } from "@/client/mutations";
+import { useMe } from "@/client/queries";
 import { formatNum, formatPt } from "@/domain/format";
-import { getMe } from "@/server/queries/me";
-import { claimLoginBonusAction } from "@/server/services/profile";
 
-export default async function MainLayout({ children }: { children: React.ReactNode }) {
-  const me = await getMe();
-  if (!me.user) redirect("/login");
-  if (!me.profile || !me.wallet) redirect("/welcome");
-  const w = me.wallet;
+// ログイン必須の画面の枠。画面自体は静的に配信し、データはブラウザから取得する
+export default function MainLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const me = useMe();
+
+  useEffect(() => {
+    if (!me.data || !me.fresh) return;
+    if (!me.data.userId) router.replace("/login");
+    else if (!me.data.profile) router.replace("/welcome");
+  }, [me.data, me.fresh, router]);
+
+  if (!me.data?.profile || !me.data.wallet) return <Loading error={me.error} />;
+  const w = me.data.wallet;
 
   return (
     <div className="mx-auto min-h-screen max-w-md pb-20">
@@ -22,7 +34,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       </header>
       {w.login_bonus_available && (
         <div className="border-b bg-yellow-50 px-3 py-2">
-          <ActionForm action={claimLoginBonusAction} submitLabel="ログインボーナスを受け取る" />
+          <ActionForm action={claimLoginBonus} submitLabel="ログインボーナスを受け取る" />
         </div>
       )}
       <main className="p-3">{children}</main>

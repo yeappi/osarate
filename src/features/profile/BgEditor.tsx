@@ -1,12 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { StickerView } from "@/components/StickerView";
 import { placeCentered } from "@/domain/canvas";
 import type { CanvasItem } from "@/domain/types";
 import { CanvasBoard } from "@/features/book-editor/CanvasBoard";
-import { saveProfileBg } from "@/server/services/profile";
+import { saveProfileBg } from "@/client/mutations";
 
 type Candidate = Omit<CanvasItem, "x" | "y">;
 
@@ -14,7 +13,6 @@ type Props = { canvas: { w: number; h: number }; initial: CanvasItem[]; candidat
 
 /** プロフィール背景の編集。手元で並べてから「保存」で確定（シールは参照のみで、保管・シール帳からは消えない） */
 export function BgEditor({ canvas, initial, candidates, max }: Props) {
-  const router = useRouter();
   const [items, setItems] = useState<CanvasItem[]>(initial);
   const [picked, setPicked] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -66,7 +64,6 @@ export function BgEditor({ canvas, initial, candidates, max }: Props) {
             startTransition(async () => {
               const r = await saveProfileBg(items);
               setMessage(r?.message ?? null);
-              if (r?.ok) router.refresh();
             })
           }
         >

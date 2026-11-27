@@ -1,38 +1,53 @@
+"use client";
+
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { Loading } from "@/components/Loading";
 import { DEXES } from "@/config/app";
+import { useDex, useMe, useProfileByHandle } from "@/client/queries";
 import { DexGrid } from "@/features/dex/DexGrid";
-import { getDex } from "@/server/queries/catalog";
-import { getMe } from "@/server/queries/me";
-import { getProfileByHandle } from "@/server/queries/profiles";
 
 // 他人の図鑑。図鑑購入できるシールはその人へギフトできる
-export default async function UserDexPage({ params }: { params: Promise<{ handle: string; slug: string }> }) {
-  const { handle, slug } = await params;
+export default function UserDexPage() {
+  const { handle, slug } = useParams<{ handle: string; slug: string }>();
+  const router = useRouter();
   const dex = DEXES.find((d) => d.slug === slug);
-  const profile = await getProfileByHandle(decodeURIComponent(handle));
-  if (!dex || !profile) notFound();
-  const me = await getMe();
-  if (me.user?.id === profile.user_id) redirect(`/dex/${slug}`);
-  const entries = await getDex(profile.user_id, slug);
-  const owned = entries.filter((e) => e.owned).length;
+  const profile = useProfileByHandle(decodeURIComponent(handle));
+  const me = useMe();
+  const p = profile.data ?? null;
+  const entries = useDex(p?.user_id ?? null, slug);
+
+  useEffect(() => {
+    if (p && me.data?.userId === p.user_id) router.replace(`/dex/${slug}`);
+  }, [p, me.data, slug, router]);
+
+  if (!dex) return <p className="text-sm">図鑑が見つかりません</p>;
+  if (profile.data === undefined) return <Loading error={profile.error} />;
+  if (!p) return <p className="text-sm">ユーザーが見つかりません</p>;
 
   return (
     <div>
       <p className="text-sm">
-        <Link href={`/u/${profile.handle}`} className="link">← {profile.display_name}</Link>
+        <Link href={`/u/${p.handle}`} className="link">← {p.display_name}</Link>
       </p>
       <nav className="my-2 flex gap-3 text-sm">
         {DEXES.map((d) => (
-          <Link key={d.slug} href={`/u/${profile.handle}/dex/${d.slug}`} className={d.slug === slug ? "font-bold" : "link"}>
+          <Link key={d.slug} href={`/u/${p.handle}/dex/${d.slug}`} className={d.slug === slug ? "font-bold" : "link"}>
             {d.name}
           </Link>
         ))}
       </nav>
-      <h1 className="h2">
-        {profile.display_name} の図鑑：{dex.name}（{owned} / {entries.length}）
-      </h1>
-      <DexGrid entries={entries} mode="gift" giftToHandle={profile.handle} />
+      {!entries.data ? (
+        <Loading error={entries.error} />
+      ) : (
+        <>
+          <h1 className="h2">
+            {p.display_name} の図鑑：{dex.name}（{entries.data.filter((e) => e.owned).length} / {entries.data.length}）
+          </h1>
+          <DexGrid entries={entries.data} mode="gift" giftToHandle={p.handle} />
+        </>
+      )}
     </div>
   );
 }

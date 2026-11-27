@@ -1,8 +1,8 @@
 import { toUserMessage } from "@/domain/errors";
 import { createSupabaseServer } from "@/server/supabase/server";
 
-/** フォーム用 Server Action の戻り値（ActionForm が表示する） */
-export type ActionState = { ok: boolean; message: string; data?: unknown } | null;
+import type { ActionState } from "@/domain/action";
+export type { ActionState };
 
 export function ok(message: string, data?: unknown): ActionState {
   return { ok: true, message, data };
@@ -45,13 +45,4 @@ export function bool(fd: FormData, key: string): boolean {
 /** ActionForm が自動で付ける冪等キー */
 export function requestId(fd: FormData): string {
   return str(fd, "requestId");
-}
-
-/** @handle または handle から user_id を引く */
-export async function resolveHandle(handle: string): Promise<string | null> {
-  const h = handle.replace(/^@/, "").trim();
-  if (!h) return null;
-  const supabase = await createSupabaseServer();
-  const { data } = await supabase.from("oshi_profiles").select("user_id").ilike("handle", h).maybeSingle();
-  return (data?.user_id as string | undefined) ?? null;
 }

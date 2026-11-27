@@ -17,7 +17,7 @@ Claude と ChatGPT が同じリポジトリを交互に編集する。全員こ�
 ## 責務の分離
 
 - ポイント・所有権・ギフト・貼付の処理は DB関数（RPC）にのみ書く。UI・services に計算や所有権判定を書かない。
-- UI は `server/services` / `server/queries` 経由でのみデータに触る。
+- UI は `client/queries` / `client/mutations` 経由でのみデータに触る（Supabase を直接呼ばない）。
 - 数値は `oshi_settings` から読む。コードに直書きしない。端数は切り捨て。
 - MVP に不要な抽象化・先回り実装をしない。
 
