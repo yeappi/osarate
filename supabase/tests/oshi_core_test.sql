@@ -29,8 +29,15 @@ begin
     json_build_object('sub', p_uid, 'role', 'authenticated')::text, true);
 end $$;
 
--- テストユーザー A / B / C
+create function pg_temp.login_anon(p_uid uuid) returns void language plpgsql as $$
+begin
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', p_uid, 'role', 'authenticated', 'is_anonymous', true)::text, true);
+end $$;
+
+-- テストユーザー A / B / C ＋ 匿名ログインユーザー D
 insert into auth.users (id, email, aud, role) values
+  ('00000000-0000-0000-0000-00000000000d', null, 'authenticated', 'authenticated'),
   ('00000000-0000-0000-0000-00000000000a', 'oshi-test-a@example.invalid', 'authenticated', 'authenticated'),
   ('00000000-0000-0000-0000-00000000000b', 'oshi-test-b@example.invalid', 'authenticated', 'authenticated'),
   ('00000000-0000-0000-0000-00000000000c', 'oshi-test-c@example.invalid', 'authenticated', 'authenticated');
@@ -57,6 +64,15 @@ do $$ begin
 
   perform pg_temp.login('00000000-0000-0000-0000-00000000000c');
   perform public.oshi_create_profile('tester_c', 'テストC');
+
+  -- 匿名ログインはプロフィール作成も更新系操作もできない
+  perform pg_temp.login_anon('00000000-0000-0000-0000-00000000000d');
+  perform pg_temp.fails($q$ select public.oshi_create_profile('tester_d', 'テストD') $q$, 'anonymous_not_allowed');
+  perform pg_temp.fails($q$ select public.oshi_claim_login_bonus() $q$, 'anonymous_not_allowed');
+  perform pg_temp.ok(exists (select 1 from public.oshi_dex_view(auth.uid(), 'main')), '匿名でも図鑑は見られる');
+  -- 正規ユーザーのIDでも匿名トークンなら拒否
+  perform pg_temp.login_anon('00000000-0000-0000-0000-00000000000a');
+  perform pg_temp.fails($q$ select public.oshi_claim_login_bonus() $q$, 'anonymous_not_allowed');
 end $$;
 
 -- ---------- 2. 直接書き換え・秘匿列・内部関数の禁止 ----------
