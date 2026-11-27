@@ -7,8 +7,8 @@ import { supabaseEnv } from "@/config/app";
  * Server Component / Server Action / Route Handler から使う。
  */
 export async function createSupabaseServer() {
-  const { url, anonKey } = supabaseEnv();
   const cookieStore = await cookies();
+  const { url, anonKey } = supabaseEnv();
   return createServerClient(url, anonKey, {
     cookies: {
       getAll() {
