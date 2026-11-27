@@ -8,9 +8,9 @@ PGBIN="${PGBIN:-$(dirname "$(command -v initdb 2>/dev/null || ls /usr/lib/postgr
 DIR="$(mktemp -d)"; PORT="${PORT:-54329}"
 trap '"$PGBIN/pg_ctl" -D "$DIR/data" stop -m fast >/dev/null 2>&1 || true; rm -rf "$DIR"' EXIT
 "$PGBIN/initdb" -D "$DIR/data" -U postgres -A trust >/dev/null
-"$PGBIN/pg_ctl" -D "$DIR/data" -o "-k $DIR -p $PORT" -l "$DIR/log" start >/dev/null
-sleep 1
-P="psql -h $DIR -p $PORT -U postgres -q -v ON_ERROR_STOP=1"
+# Unix ソケットはパスが長いと起動できない環境（macOS 等）があるため TCP で接続する
+"$PGBIN/pg_ctl" -D "$DIR/data" -o "-c listen_addresses=127.0.0.1 -c unix_socket_directories='' -p $PORT" -l "$DIR/log" -w start >/dev/null
+P="psql -h 127.0.0.1 -p $PORT -U postgres -q -v ON_ERROR_STOP=1"
 $P -f supabase/tests/_supabase_stub.sql
 for f in supabase/migrations/*.sql; do $P -f "$f"; done
 for f in supabase/tests/*_test.sql; do echo "== $f"; $P -f "$f"; done

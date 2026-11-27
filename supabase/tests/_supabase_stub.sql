@@ -12,3 +12,14 @@ grant usage on schema public to anon, authenticated;
 -- Supabase と同じく public の新規オブジェクトに既定権限を付ける
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
+
+-- storage（バケット作成マイグレーション用の最小構成）
+create schema storage;
+create table storage.buckets (
+  id text primary key,
+  name text not null,
+  public boolean default false,
+  file_size_limit bigint,
+  allowed_mime_types text[],
+  created_at timestamptz default now()
+);
