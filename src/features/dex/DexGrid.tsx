@@ -39,7 +39,7 @@ export function DexGrid(props: Props) {
           key={e.type_id}
           className={`flex flex-col gap-2 rounded-[22px] bg-surface p-3 ${e.owned ? "border border-line" : "border border-dashed border-line"}`}
         >
-          <div className="flex h-24 items-center justify-center rounded-tile bg-bg">
+          <div className="flex h-24 items-center justify-center rounded-tile bg-muted">
             <StickerView name={e.name} imagePath={e.image_path} w={e.width} h={e.height} fixed={76} gray={!e.owned && !e.dex_purchasable} />
           </div>
           <div className={`text-[13px] font-bold leading-tight ${e.owned ? "" : "text-sub"}`}>{e.name}</div>

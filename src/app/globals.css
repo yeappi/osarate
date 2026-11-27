@@ -8,13 +8,13 @@
    ===================================================================== */
 :root,
 [data-theme="komorebi"] {
-  --t-bg: #f7f3ec;          /* 地 */
+  --t-bg: #ffffff;          /* 地 */
   --t-surface: #ffffff;     /* 面（カード） */
   --t-paper: #fffdf8;       /* 台紙 */
   --t-ink: #23201c;         /* 文字 */
   --t-sub: #7a7268;         /* 補助の文字（4.5:1 を満たす） */
   --t-line: #e9e2d6;        /* 線 */
-  --t-muted: #f1ede6;       /* 控えめな面 */
+  --t-muted: #f5f2ed;       /* 控えめな面（白地の上で区切る） */
   --t-accent: #e2566b;      /* 差し色 */
   --t-accent-ink: #b23e52;  /* 差し色系の強調文字 */
   --t-accent-soft: #fde9ec; /* 差し色の淡い面 */
