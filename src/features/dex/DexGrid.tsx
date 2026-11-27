@@ -2,48 +2,76 @@
 
 import { ActionForm } from "@/components/ActionForm";
 import { StickerView } from "@/components/StickerView";
+import { buySticker } from "@/client/mutations";
 import { formatPt, rarityLabel } from "@/domain/format";
 import type { DexEntry } from "@/domain/types";
-import { buySticker } from "@/client/mutations";
 
 type Props =
   | { entries: DexEntry[]; mode: "self" }
   | { entries: DexEntry[]; mode: "gift"; giftToHandle: string }
   | { entries: DexEntry[]; mode: "view" };
 
+const RARITY_TONE: Record<string, string> = {
+  common: "bg-muted text-sub",
+  rare: "bg-mint-soft text-mint",
+  epic: "bg-accent-soft text-accent-ink",
+  legend: "bg-gold-soft text-ink",
+};
+
+/** 収集率のバー */
+export function DexProgress({ owned, total }: { owned: number; total: number }) {
+  const pct = total ? Math.round((owned / total) * 100) : 0;
+  return (
+    <div className="mt-2 h-2 overflow-hidden rounded-full bg-line">
+      <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
 /** 図鑑の一覧。self=自分用に購入、gift=相手へ購入＋ギフト、view=閲覧のみ */
 export function DexGrid(props: Props) {
   const { entries } = props;
-  if (entries.length === 0) return <p className="text-sm text-gray-500">まだシールがありません</p>;
+  if (entries.length === 0) return <p className="text-sm text-sub">まだシールがありません</p>;
   return (
-    <ul className="space-y-2">
+    <ul className="grid grid-cols-2 gap-3">
       {entries.map((e) => (
-        <li key={e.type_id} className="card flex gap-3">
-          <StickerView name={e.name} imagePath={e.image_path} w={e.width} h={e.height} fixed={64} gray={!e.owned} />
-          <div className="flex-1 space-y-1 text-sm">
-            <div className="font-bold">
-              {e.name} <span className="text-xs font-normal">{rarityLabel(e.rarity)}</span>
-            </div>
-            <div className="text-xs text-gray-600">
-              魅力値 {e.charm}・{formatPt(e.price)}・{e.owned ? "収集済み" : "未収集"}
-            </div>
-            {e.dex_purchasable && props.mode === "self" && (
-              <ActionForm action={buySticker} submitLabel="買う">
-                <input type="hidden" name="typeId" value={e.type_id} />
-                <input name="qty" type="number" min={1} max={10} defaultValue={1} className="input w-14" />
-                <label className="text-xs">
+        <li
+          key={e.type_id}
+          className={`flex flex-col gap-2 rounded-[22px] bg-surface p-3 ${e.owned ? "border border-line" : "border border-dashed border-line"}`}
+        >
+          <div className="flex h-24 items-center justify-center rounded-tile bg-bg">
+            <StickerView name={e.name} imagePath={e.image_path} w={e.width} h={e.height} fixed={76} gray={!e.owned && !e.dex_purchasable} />
+          </div>
+          <div className={`text-[13px] font-bold leading-tight ${e.owned ? "" : "text-sub"}`}>{e.name}</div>
+          <div className="flex items-center justify-between gap-1">
+            <span className="font-num text-xs font-medium text-sub">{e.dex_purchasable ? formatPt(e.price) : "図鑑では買えない"}</span>
+            <span className={`rounded-full px-2 py-0.5 text-[10px] ${RARITY_TONE[e.rarity] ?? RARITY_TONE.common}`}>{rarityLabel(e.rarity)}</span>
+          </div>
+          {e.dex_purchasable && props.mode === "self" && (
+            <ActionForm action={buySticker} className="flex flex-col gap-1.5">
+              <input type="hidden" name="typeId" value={e.type_id} />
+              <div className="flex items-center gap-1.5">
+                <input name="qty" type="number" min={1} max={10} defaultValue={1} aria-label="枚数" className="input w-14 py-1" />
+                <label className="flex items-center gap-1 text-[11px] text-sub">
                   <input type="checkbox" name="open" /> すぐ開封
                 </label>
-              </ActionForm>
-            )}
-            {e.dex_purchasable && props.mode === "gift" && (
-              <ActionForm action={buySticker} submitLabel="ギフトする" confirm={`${formatPt(e.price)}でギフトしますか？`}>
-                <input type="hidden" name="typeId" value={e.type_id} />
-                <input type="hidden" name="giftTo" value={props.giftToHandle} />
-                <input name="message" maxLength={100} placeholder="メッセージ（任意）" className="input w-full" />
-              </ActionForm>
-            )}
-          </div>
+              </div>
+              <button className="btn-accent w-full">買う</button>
+            </ActionForm>
+          )}
+          {e.dex_purchasable && props.mode === "gift" && (
+            <ActionForm action={buySticker} confirm={`${formatPt(e.price)}でギフトしますか？`} className="flex flex-col gap-1.5">
+              <input type="hidden" name="typeId" value={e.type_id} />
+              <input type="hidden" name="giftTo" value={props.giftToHandle} />
+              <input name="message" maxLength={100} placeholder="メッセージ（任意）" className="input w-full py-1 text-xs" />
+              <button className="btn-accent w-full">ギフトする</button>
+            </ActionForm>
+          )}
+          {!e.dex_purchasable && (
+            <div className="flex min-h-9 items-center justify-center rounded-xl border border-line text-xs text-sub">
+              {e.owned ? "収集済み" : "未収集"}
+            </div>
+          )}
         </li>
       ))}
     </ul>

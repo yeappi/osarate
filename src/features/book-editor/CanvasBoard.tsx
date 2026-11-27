@@ -25,7 +25,7 @@ export function CanvasBoard({ canvas, items, displayWidth = 320, selectedId, onC
   return (
     <div
       ref={ref}
-      className={`relative overflow-hidden border bg-white ${className ?? ""}`}
+      className={`paper relative overflow-hidden rounded-[10px_22px_22px_10px] shadow-[0_1px_0_var(--t-line),0_14px_34px_rgba(60,40,20,0.12),inset_8px_0_0_var(--t-muted)] ${className ?? ""}`}
       style={{ width: rendered.w, height: rendered.h }}
       onClick={(e) => {
         if (!onCanvasTap || !ref.current) return;
@@ -38,7 +38,7 @@ export function CanvasBoard({ canvas, items, displayWidth = 320, selectedId, onC
         <button
           type="button"
           key={it.sticker_id}
-          className={`absolute ${selectedId === it.sticker_id ? "outline outline-2 outline-blue-500" : ""}`}
+          className={`absolute rounded-xl ${selectedId === it.sticker_id ? "outline-2 outline-offset-4 outline-dashed outline-accent" : ""}`}
           style={{ left: it.x * scale, top: it.y * scale }}
           onClick={(e) => {
             if (!onItemTap) return;

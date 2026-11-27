@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Icon } from "@/components/Icon";
 import { StickerView } from "@/components/StickerView";
 import { placeCentered } from "@/domain/canvas";
 import type { CanvasItem } from "@/domain/types";
@@ -54,10 +55,18 @@ export function BookEditor({ bookId, pageCount, canvas, items, storage, editable
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between text-sm">
-        <button className="btn" disabled={page <= 1} onClick={() => setPage(page - 1)}>←</button>
-        <span>{page} / {pageCount} ページ</span>
-        <button className="btn" disabled={page >= pageCount} onClick={() => setPage(page + 1)}>→</button>
+      <div className="flex items-center justify-center gap-4">
+        <button aria-label="前のページ" className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface disabled:text-line" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+          <Icon name="back" size={16} strokeWidth={2} />
+        </button>
+        <div className="flex items-center gap-1.5" aria-label={`${page} / ${pageCount} ページ`}>
+          {Array.from({ length: pageCount }, (_, i) => (
+            <span key={i} className={`h-1.5 rounded-full transition-all ${i + 1 === page ? "w-5 bg-accent" : "w-1.5 bg-line"}`} />
+          ))}
+        </div>
+        <button aria-label="次のページ" className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface disabled:text-line" disabled={page >= pageCount} onClick={() => setPage(page + 1)}>
+          <Icon name="next" size={16} strokeWidth={2} />
+        </button>
       </div>
 
       <CanvasBoard
@@ -71,7 +80,7 @@ export function BookEditor({ bookId, pageCount, canvas, items, storage, editable
 
       {editable && (
         <>
-          <p className="text-xs text-gray-600">
+          <p className="text-center text-xs text-sub">
             {picked
               ? pickedIsPlaced
                 ? "移動先をタップ、または「剥がす」"
@@ -80,22 +89,24 @@ export function BookEditor({ bookId, pageCount, canvas, items, storage, editable
             {pending && "（処理中…）"}
           </p>
           {picked && pickedIsPlaced && (
-            <button className="btn" disabled={pending} onClick={() => run(() => removeSticker(picked))}>
+            <button className="btn-primary mx-auto flex" disabled={pending} onClick={() => run(() => removeSticker(picked))}>
               剥がす
             </button>
           )}
-          {message && <p className="text-sm">{message}</p>}
+          {message && <p className="text-center text-sm">{message}</p>}
 
-          <h2 className="h2">保管（開封済み・未使用）</h2>
+          <div className="rounded-t-[26px] bg-surface px-4 pb-4 pt-3 shadow-[0_-8px_24px_rgba(60,40,20,0.06)]">
+          <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-line" />
+          <h2 className="mb-2 font-round text-sm font-bold">保管 <span className="font-sans text-xs font-normal text-sub">選んでページをタップ</span></h2>
           {storage.length === 0 ? (
-            <p className="text-sm text-gray-500">貼れるシールがありません</p>
+            <p className="text-sm text-sub">貼れるシールがありません</p>
           ) : (
             <ul className="flex flex-wrap gap-2">
               {storage.map((s) => (
                 <li key={s.sticker_id}>
                   <button
                     type="button"
-                    className={picked === s.sticker_id ? "outline outline-2 outline-blue-500" : ""}
+                    className={`rounded-tile ${picked === s.sticker_id ? "ring-2 ring-accent" : ""}`}
                     onClick={() => setPicked(picked === s.sticker_id ? null : s.sticker_id)}
                   >
                     <StickerView name={s.name} imagePath={s.image_path} w={s.w} h={s.h} fixed={56} />
@@ -104,6 +115,7 @@ export function BookEditor({ bookId, pageCount, canvas, items, storage, editable
               ))}
             </ul>
           )}
+          </div>
         </>
       )}
     </div>

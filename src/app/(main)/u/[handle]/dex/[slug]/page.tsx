@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { Loading } from "@/components/Loading";
 import { DEXES } from "@/config/app";
 import { useDex, useMe, useProfileByHandle } from "@/client/queries";
-import { DexGrid } from "@/features/dex/DexGrid";
+import { DexGrid, DexProgress } from "@/features/dex/DexGrid";
 
 // 他人の図鑑。図鑑購入できるシールはその人へギフトできる
 export default function UserDexPage() {
@@ -31,9 +31,9 @@ export default function UserDexPage() {
       <p className="text-sm">
         <Link href={`/u/${p.handle}`} className="link">← {p.display_name}</Link>
       </p>
-      <nav className="my-2 flex gap-3 text-sm">
+      <nav className="my-3 flex gap-2">
         {DEXES.map((d) => (
-          <Link key={d.slug} href={`/u/${p.handle}/dex/${d.slug}`} className={d.slug === slug ? "font-bold" : "link"}>
+          <Link key={d.slug} href={`/u/${p.handle}/dex/${d.slug}`} className={d.slug === slug ? "btn-primary min-h-9" : "btn"}>
             {d.name}
           </Link>
         ))}
@@ -42,9 +42,11 @@ export default function UserDexPage() {
         <Loading error={entries.error} />
       ) : (
         <>
-          <h1 className="h2">
+          <h1 className="font-round text-xl font-bold">
             {p.display_name} の図鑑：{dex.name}（{entries.data.filter((e) => e.owned).length} / {entries.data.length}）
           </h1>
+          <DexProgress owned={entries.data.filter((e) => e.owned).length} total={entries.data.length} />
+          <div className="h-3" />
           <DexGrid entries={entries.data} mode="gift" giftToHandle={p.handle} />
         </>
       )}

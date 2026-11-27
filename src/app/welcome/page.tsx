@@ -22,7 +22,7 @@ export default function WelcomePage() {
 
   return (
     <main className="mx-auto max-w-sm space-y-4 p-6">
-      <h1 className="text-2xl font-bold">ようこそ</h1>
+      <h1 className="font-round text-2xl font-bold">ようこそ</h1>
       <p className="text-sm">プロフィールを作成してください。ユーザーIDはあとから変更できません。</p>
       <ActionForm
         action={createProfile}

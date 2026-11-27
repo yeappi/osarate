@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ActionForm } from "@/components/ActionForm";
+import { BookTile } from "@/components/BookTile";
 import { Loading } from "@/components/Loading";
 import { StickerView } from "@/components/StickerView";
 import { DEXES } from "@/config/app";
@@ -31,12 +32,9 @@ export default function StickersPage() {
         <Loading error={books.error} />
       ) : (
         <ul className="grid grid-cols-3 gap-2">
-          {books.data.map((b) => (
+          {books.data.map((b, i) => (
             <li key={b.id}>
-              <Link href={`/stickers/books/${b.id}`} className="card block text-center text-sm">
-                {b.type.name}
-                <div className="text-xs text-gray-500">No.{b.serial_no}・{b.type.page_count}P</div>
-              </Link>
+              <BookTile id={b.id} name={b.type.name} sub={`No.${b.serial_no}・${b.type.page_count}P`} index={i} />
             </li>
           ))}
         </ul>
@@ -46,14 +44,14 @@ export default function StickersPage() {
       {!storage.data ? (
         <Loading error={storage.error} />
       ) : storage.data.length === 0 ? (
-        <p className="text-sm text-gray-500">開封済みのシールはここに入ります</p>
+        <p className="text-sm text-sub">開封済みのシールはここに入ります</p>
       ) : (
         <ul className="space-y-2">
           {storage.data.map((s) => (
             <li key={s.id} className="card flex items-center gap-3">
               <StickerView name={s.type.name} imagePath={s.type.image_path} w={s.type.width} h={s.type.height} fixed={48} />
               <div className="flex-1 text-sm">
-                {s.type.name} <span className="text-xs text-gray-500">No.{s.serial_no}</span>
+                {s.type.name} <span className="text-xs text-sub">No.{s.serial_no}</span>
                 <details className="mt-1">
                   <summary className="link cursor-pointer text-xs">プレゼントする</summary>
                   <ActionForm action={sendPresent} submitLabel="プレゼント" confirm="このシールをプレゼントしますか？">

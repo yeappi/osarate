@@ -52,10 +52,10 @@ export default function ConfirmPage() {
 
   return (
     <main className="mx-auto max-w-sm space-y-4 p-6">
-      <h1 className="text-2xl font-bold">推されーと</h1>
+      <h1 className="font-round text-2xl font-bold">推されーと</h1>
       {error ? (
         <>
-          <p className="text-sm text-red-600">{error}</p>
+          <p className="text-sm text-accent-ink">{error}</p>
           <p className="text-sm">
             <Link href="/reset" className="link">パスワード再設定</Link>　/　<Link href="/login" className="link">ログイン</Link>
           </p>

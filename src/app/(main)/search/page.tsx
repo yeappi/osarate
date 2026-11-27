@@ -13,7 +13,7 @@ function UserRow({ p, right }: { p: Pick<PublicProfile, "handle" | "display_name
     <li>
       <Link href={`/u/${p.handle}`} className="card flex items-center justify-between text-sm">
         <span>
-          {p.display_name} <span className="text-xs text-gray-500">@{p.handle}</span>
+          {p.display_name} <span className="text-xs text-sub">@{p.handle}</span>
         </span>
         {right}
       </Link>
@@ -44,14 +44,14 @@ export default function SearchPage() {
         <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="ユーザーを検索" className="input flex-1" />
         <button className="btn">検索</button>
       </form>
-      <nav className="mb-3 flex gap-3 text-sm">
+      <nav className="mb-3 flex gap-2">
         {(
           [
             ["ranking", "ランキング"],
             ["following", "フォロー中"],
           ] as const
         ).map(([k, label]) => (
-          <button key={k} onClick={() => setTab(k)} className={tab === k ? "font-bold" : "link"}>
+          <button key={k} onClick={() => setTab(k)} className={tab === k ? "btn-primary min-h-9" : "btn"}>
             {label}
           </button>
         ))}
@@ -63,13 +63,13 @@ export default function SearchPage() {
         <div>
           <div className="mb-2 flex flex-wrap gap-3 text-sm">
             {RANKING_METRICS.map((m) => (
-              <button key={m.key} onClick={() => setMetric(m.key)} className={m.key === metric ? "font-bold" : "link"}>
+              <button key={m.key} onClick={() => setMetric(m.key)} className={`rounded-full px-3 py-1 text-xs ${m.key === metric ? "bg-ink font-bold text-surface" : "bg-surface text-sub"}`}>
                 {m.label}
               </button>
             ))}
-            <span>｜</span>
+            <span className="w-full" />
             {RANKING_PERIODS.map((p) => (
-              <button key={p.key} onClick={() => setPeriod(p.key)} className={p.key === period ? "font-bold" : "link"}>
+              <button key={p.key} onClick={() => setPeriod(p.key)} className={`rounded-full px-3 py-1 text-xs ${p.key === period ? "bg-accent-soft font-bold text-accent-ink" : "text-sub"}`}>
                 {p.label}
               </button>
             ))}
@@ -83,16 +83,16 @@ export default function SearchPage() {
 
 function SearchResults({ q }: { q: string }) {
   const users = useSearch(q);
-  if (!q) return <p className="text-sm text-gray-500">ユーザーIDか表示名で検索</p>;
+  if (!q) return <p className="text-sm text-sub">ユーザーIDか表示名で検索</p>;
   if (!users.data) return <Loading error={users.error} />;
-  if (users.data.length === 0) return <p className="text-sm text-gray-500">見つかりませんでした</p>;
+  if (users.data.length === 0) return <p className="text-sm text-sub">見つかりませんでした</p>;
   return <ul className="space-y-2">{users.data.map((u) => <UserRow key={u.user_id} p={u} />)}</ul>;
 }
 
 function Following({ userId }: { userId: string | null }) {
   const users = useFollowing(userId);
   if (!users.data) return <Loading error={users.error} />;
-  if (users.data.length === 0) return <p className="text-sm text-gray-500">まだフォローしていません</p>;
+  if (users.data.length === 0) return <p className="text-sm text-sub">まだフォローしていません</p>;
   return <ul className="space-y-2">{users.data.map((u) => <UserRow key={u.user_id} p={u} />)}</ul>;
 }
 
@@ -104,11 +104,11 @@ function Ranking({ metric, period, me }: { metric: string; period: string; me: s
     <div>
       <p className="mb-2 text-sm">あなた：{mine ? `${mine.rnk}位（${formatNum(mine.value)}）` : "圏外"}</p>
       {rows.data.length === 0 ? (
-        <p className="text-sm text-gray-500">まだランキングがありません</p>
+        <p className="text-sm text-sub">まだランキングがありません</p>
       ) : (
         <ol className="space-y-2">
           {rows.data.map((r) => (
-            <UserRow key={r.user_id} p={r} right={<span className="font-bold">{r.rnk}位　{formatNum(r.value)}</span>} />
+            <UserRow key={r.user_id} p={r} right={<span className="flex items-baseline gap-2"><span className="num text-sm text-accent-ink">{r.rnk}位</span><span className="num">{formatNum(r.value)}</span></span>} />
           ))}
         </ol>
       )}

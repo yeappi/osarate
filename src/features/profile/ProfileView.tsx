@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BookTile } from "@/components/BookTile";
 import { Loading } from "@/components/Loading";
 import { DEXES } from "@/config/app";
 import { fetchDex, useBooks, useFollowStats, useMe, useSetting, useShowcase } from "@/client/queries";
@@ -46,15 +47,12 @@ export function ProfileView({ profile }: { profile: PublicProfile }) {
       {!books.data ? (
         <Loading error={books.error} />
       ) : books.data.length === 0 ? (
-        <p className="text-sm text-gray-500">まだありません</p>
+        <p className="text-sm text-sub">まだありません</p>
       ) : (
         <ul className="grid grid-cols-3 gap-2">
-          {books.data.map((b) => (
+          {books.data.map((b, i) => (
             <li key={b.id}>
-              <Link href={`/stickers/books/${b.id}`} className="card block text-center text-sm">
-                {b.type.name}
-                <div className="text-xs text-gray-500">No.{b.serial_no}・{b.type.page_count}P</div>
-              </Link>
+              <BookTile id={b.id} name={b.type.name} sub={`No.${b.serial_no}・${b.type.page_count}P`} index={i} />
             </li>
           ))}
         </ul>

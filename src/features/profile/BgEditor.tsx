@@ -71,13 +71,13 @@ export function BgEditor({ canvas, initial, candidates, max }: Props) {
         </button>
       </div>
       {message && <p className="text-sm">{message}</p>}
-      <p className="text-xs text-gray-600">シールを選んで背景をタップ。置いたシールをタップで選択→移動先をタップ or 外す</p>
+      <p className="text-xs text-sub">シールを選んで背景をタップ。置いたシールをタップで選択→移動先をタップ or 外す</p>
       <ul className="flex flex-wrap gap-2">
         {unused.map((c) => (
           <li key={c.sticker_id}>
             <button
               type="button"
-              className={picked === c.sticker_id ? "outline outline-2 outline-blue-500" : ""}
+              className={picked === c.sticker_id ? "outline outline-2 outline-accent" : ""}
               onClick={() => setPicked(picked === c.sticker_id ? null : c.sticker_id)}
             >
               <StickerView name={c.name} imagePath={c.image_path} w={c.w} h={c.h} fixed={48} />

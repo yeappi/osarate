@@ -46,7 +46,7 @@ export function ActionForm({ action, children, submitLabel, confirm, className, 
           {pending ? "…" : submitLabel}
         </button>
       )}
-      {state && <p className={`w-full text-sm ${state.ok ? "text-green-700" : "text-red-600"}`}>{state.message}</p>}
+      {state && <p className={`w-full text-sm ${state.ok ? "text-mint" : "text-accent-ink"}`}>{state.message}</p>}
     </form>
   );
 }

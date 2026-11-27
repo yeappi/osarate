@@ -15,7 +15,7 @@ export default function ShopPage() {
   return (
     <div>
       <h1 className="h2">SHOP（限定品）</h1>
-      {listings.length === 0 && <p className="text-sm text-gray-500">販売中の商品はありません</p>}
+      {listings.length === 0 && <p className="text-sm text-sub">販売中の商品はありません</p>}
       <ul className="space-y-3">
         {listings.map((l) => {
           const st = l.sticker_type;
@@ -27,12 +27,12 @@ export default function ShopPage() {
                 {st ? (
                   <StickerView name={st.name} imagePath={st.image_path} w={st.width} h={st.height} fixed={72} />
                 ) : (
-                  <div className="flex h-[72px] w-[72px] items-center justify-center border bg-pink-50 text-xs">シール帳</div>
+                  <div className="flex h-[72px] w-[72px] items-center justify-center border bg-accent-soft text-xs">シール帳</div>
                 )}
                 <div className="text-sm">
                   <div className="font-bold">{st?.name ?? bt?.name}</div>
                   <div>{formatPt(l.price)}</div>
-                  <div className="text-xs text-gray-600">
+                  <div className="text-xs text-sub">
                     {left != null && `残り ${left}`}
                     {l.ends_at && `　〜${new Date(l.ends_at).toLocaleString("ja-JP")}`}
                     {l.per_user_limit && `　1人${l.per_user_limit}個まで`}

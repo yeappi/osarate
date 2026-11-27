@@ -43,7 +43,7 @@ export function PachiPage() {
             {board.data.map((m) => (
               <li key={m.id} className="card space-y-1">
                 <div className="text-sm font-bold">{m.name}</div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-sub">
                   回転 {formatNum(m.spins)}・当たり {formatNum(m.hits)}（{m.spins ? ((m.hits / m.spins) * 100).toFixed(1) : "-"}%）・大当たり {m.big_hits}・最大{" "}
                   {formatNum(m.max_payout)}玉
                 </div>
@@ -66,7 +66,7 @@ export function PachiPage() {
         {!prizes.data ? (
           <Loading error={prizes.error} />
         ) : prizes.data.length === 0 ? (
-          <p className="text-sm text-gray-500">景品はありません</p>
+          <p className="text-sm text-sub">景品はありません</p>
         ) : (
           <ul className="space-y-2">
             {prizes.data.map((p) => (
@@ -74,7 +74,7 @@ export function PachiPage() {
                 {p.sticker_type ? (
                   <StickerView name={p.sticker_type.name} imagePath={p.sticker_type.image_path} w={p.sticker_type.width} h={p.sticker_type.height} fixed={56} />
                 ) : (
-                  <div className="flex h-14 w-14 items-center justify-center border bg-pink-50 text-[10px]">シール帳</div>
+                  <div className="flex h-14 w-14 items-center justify-center border bg-accent-soft text-[10px]">シール帳</div>
                 )}
                 <div className="flex-1 text-sm">
                   <div className="font-bold">{p.sticker_type?.name ?? p.book_type?.name}</div>

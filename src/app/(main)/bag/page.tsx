@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ActionForm } from "@/components/ActionForm";
+import { BookTile } from "@/components/BookTile";
 import { Loading } from "@/components/Loading";
 import { StickerView } from "@/components/StickerView";
 import { openSticker, sendGift } from "@/client/mutations";
@@ -21,7 +22,7 @@ export default function BagPage() {
       {!sealed.data ? (
         <Loading error={sealed.error} />
       ) : sealed.data.length === 0 ? (
-        <p className="text-sm text-gray-500">未開封のシールはありません</p>
+        <p className="text-sm text-sub">未開封のシールはありません</p>
       ) : (
         <ul className="space-y-2">
           {sealed.data.map((s) => (
@@ -29,8 +30,8 @@ export default function BagPage() {
               <div className="flex items-center gap-3">
                 <StickerView name={s.type.name} imagePath={s.type.image_path} w={s.type.width} h={s.type.height} fixed={48} sealed />
                 <div className="flex-1 text-sm">
-                  {s.type.name} <span className="text-xs text-gray-500">No.{s.serial_no}</span>
-                  <div className="text-xs text-gray-500">
+                  {s.type.name} <span className="text-xs text-sub">No.{s.serial_no}</span>
+                  <div className="text-xs text-sub">
                     魅力値 {s.type.charm}
                     {s.gifted && "・受け取ったギフト"}
                   </div>
@@ -58,12 +59,9 @@ export default function BagPage() {
         <Loading error={books.error} />
       ) : (
         <ul className="grid grid-cols-3 gap-2">
-          {books.data.map((b) => (
+          {books.data.map((b, i) => (
             <li key={b.id}>
-              <Link href={`/stickers/books/${b.id}`} className="card block text-center text-sm">
-                {b.type.name}
-                <div className="text-xs text-gray-500">No.{b.serial_no}</div>
-              </Link>
+              <BookTile id={b.id} name={b.type.name} sub={`No.${b.serial_no}`} index={i} />
             </li>
           ))}
         </ul>

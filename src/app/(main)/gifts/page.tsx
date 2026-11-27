@@ -15,7 +15,7 @@ export default function GiftsPage() {
       {!rows.data ? (
         <Loading error={rows.error} />
       ) : rows.data.length === 0 ? (
-        <p className="text-sm text-gray-500">まだありません</p>
+        <p className="text-sm text-sub">まだありません</p>
       ) : (
         <ul className="space-y-2">
           {rows.data.map((r) => {
@@ -26,7 +26,7 @@ export default function GiftsPage() {
                 <div>
                   {received ? "受け取り" : "送信"}・{r.kind === "gift" ? "ギフト" : "プレゼント"}：{r.sticker.type.name}
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-sub">
                   {received ? "from" : "to"} <Link href={`/u/${other.handle}`} className="link">{other.display_name}</Link>
                   {r.kind === "gift" && received && `・還元 ${r.reward}pt（${r.rate_pct}%）`}・{new Date(r.created_at).toLocaleString("ja-JP")}
                 </div>

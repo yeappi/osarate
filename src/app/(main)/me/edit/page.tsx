@@ -63,7 +63,7 @@ export default function EditProfilePage() {
               </li>
             ))}
           </ul>
-          {opened.data.length === 0 && <p className="text-sm text-gray-500">開封済みのシールがありません</p>}
+          {opened.data.length === 0 && <p className="text-sm text-sub">開封済みのシールがありません</p>}
         </ActionForm>
       </section>
 
