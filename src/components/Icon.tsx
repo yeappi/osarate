@@ -66,7 +66,7 @@ const PATHS: Record<string, React.ReactNode> = {
   ),
 };
 
-export function Icon({ name, size = 20, strokeWidth = 1.8 }: { name: keyof typeof PATHS | string; size?: number; strokeWidth?: number }) {
+export function Icon({ name, size = 20, strokeWidth = 2 }: { name: keyof typeof PATHS | string; size?: number; strokeWidth?: number }) {
   return (
     <svg
       width={size}

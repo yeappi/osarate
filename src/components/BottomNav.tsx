@@ -25,14 +25,14 @@ export function BottomNav() {
               <Link
                 href={i.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex h-16 flex-col items-center justify-center gap-0.5 text-[10px] ${active ? "font-bold text-accent" : "text-sub"}`}
+                className={`flex h-16 flex-col items-center justify-center gap-0.5 text-[10px] ${active ? "font-bold text-ink" : "text-sub"}`}
               >
                 {i.main ? (
                   <span className={`-mt-5 flex h-12 w-12 items-center justify-center rounded-full shadow-lg ${active ? "bg-accent text-surface" : "bg-ink text-surface"}`}>
                     <Icon name={i.icon} size={24} strokeWidth={2} />
                   </span>
                 ) : (
-                  <span className={`flex h-7 w-11 items-center justify-center rounded-full ${active ? "bg-accent-soft" : ""}`}>
+                  <span className={`flex h-7 w-11 items-center justify-center rounded-full ${active ? "bg-muted" : ""}`}>
                     <Icon name={i.icon} size={22} strokeWidth={active ? 2 : 1.8} />
                   </span>
                 )}

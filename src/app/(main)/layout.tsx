@@ -11,6 +11,7 @@ import { Loading } from "@/components/Loading";
 import { claimLoginBonus } from "@/client/mutations";
 import { useMe, useStarterOptions, useUnreadGifts } from "@/client/queries";
 import { formatNum } from "@/domain/format";
+import { CountUp } from "@/components/CountUp";
 
 // ログイン必須の画面の枠。画面自体は静的に配信し、データはブラウザから取得する
 // ログインしていなくても見られる画面（シェアされたプロフィール・図鑑・シール帳）
@@ -62,10 +63,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="mx-auto min-h-screen max-w-md pb-24">
-      <header className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-bg/90 px-4 pb-2 pt-3 backdrop-blur">
+      <header className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-line/60 bg-bg/90 px-4 pb-2 pt-3 backdrop-blur">
         <Link href="/me" className="chip pl-1.5" aria-label="ポイント">
           <span className="num flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[11px] text-surface">P</span>
-          <span className="num text-[15px]">{formatNum(w.points)}</span>
+          <span className="num text-[15px]">
+            <CountUp value={Number(w.points)} />
+          </span>
           <span className="text-[11px] text-sub">ポイント</span>
         </Link>
         <div className="flex items-center gap-1.5">
@@ -88,7 +91,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <ActionForm action={claimLoginBonus} submitLabel="受け取る" variant="primary" />
         </div>
       )}
-      <main className="px-4 pb-4 pt-1">{children}</main>
+      <main key={pathname} className="animate-fade px-4 pb-4 pt-1">
+        {children}
+      </main>
       <BottomNav />
     </div>
   );

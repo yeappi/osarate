@@ -87,7 +87,7 @@ export const presentBook: FormAction = async (fd) => {
 };
 
 export const openSticker: FormAction = (fd) =>
-  rpc("oshi_open_sticker", { p_sticker_id: s(fd, "stickerId") }, () => "開封しました。保管に入りました");
+  rpc("oshi_open_sticker", { p_sticker_id: s(fd, "stickerId") }, () => "開封しました。手持ちに入りました");
 
 export const sendGift: FormAction = async (fd) => {
   const to = await userIdOf(s(fd, "to"));

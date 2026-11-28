@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import type { ActionState } from "@/domain/action";
+import { haptic } from "@/client/haptic";
 import { confirmDialog, toast } from "./Feedback";
 
 type Props = {
@@ -32,6 +33,7 @@ export function ActionForm({ action, children, submitLabel, confirm, confirmLabe
   const [state, setState] = useState<ActionState>(null);
   const [reqId, setReqId] = useState(() => crypto.randomUUID());
   const [pending, startTransition] = useTransition();
+  const [bounce, setBounce] = useState(0);
 
   return (
     <form
@@ -46,7 +48,11 @@ export function ActionForm({ action, children, submitLabel, confirm, confirmLabe
           const r = await action(fd);
           setState(r);
           if (r) toast(r.message, r.ok);
-          if (r?.ok) setReqId(crypto.randomUUID());
+          if (r?.ok) {
+            setReqId(crypto.randomUUID());
+            setBounce((b) => b + 1);
+            haptic("success");
+          }
           onDone?.(r);
         });
       }}
@@ -54,7 +60,7 @@ export function ActionForm({ action, children, submitLabel, confirm, confirmLabe
       <input type="hidden" name="requestId" value={reqId} />
       {children}
       {submitLabel && (
-        <button type="submit" disabled={pending} className={VARIANT[variant]}>
+        <button type="submit" key={bounce} disabled={pending} className={`${VARIANT[variant]} ${bounce ? "animate-jelly" : ""}`}>
           {pending ? "…" : submitLabel}
         </button>
       )}

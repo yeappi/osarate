@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ActionForm } from "@/components/ActionForm";
 import { Icon } from "@/components/Icon";
 import { Loading } from "@/components/Loading";
+import { EmptyState } from "@/components/EmptyState";
 import { StickerView } from "@/components/StickerView";
 import { buyListing } from "@/client/mutations";
 import { useListings } from "@/client/queries";
@@ -35,7 +36,7 @@ export default function ShopPage() {
       {!q.data ? (
         <Loading error={q.error} />
       ) : q.data.length === 0 ? (
-        <p className="card text-center text-sm text-sub">いま販売中の限定品はありません。次の入荷をお楽しみに</p>
+        <EmptyState image="/stickers/pop_pop_price.png" title="いま販売中の限定品はありません">次の入荷をお楽しみに</EmptyState>
       ) : (
         <ul className="space-y-3">
           {q.data.map((l) => {

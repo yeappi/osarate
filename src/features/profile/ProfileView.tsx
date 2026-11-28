@@ -25,7 +25,18 @@ export function ProfileView({ profile, preview }: { profile: PublicProfile; prev
     Promise.all(
       VISIBLE_DEXES.map(async (d) => {
         const entries = await fetchDex(profile.user_id, d.slug);
-        return { ...d, owned: entries.filter((e) => e.owned).length, total: entries.length };
+        // シリーズ（テーマ・画風）ごとに、全部集めたものを数える
+        const bySeries = new Map<string, { owned: number; total: number }>();
+        for (const e of entries) {
+          if (!e.series || !e.dex_purchasable) continue;
+          const k = `${e.category === "base" ? "基礎・" : ""}${e.series}`;
+          const g = bySeries.get(k) ?? { owned: 0, total: 0 };
+          g.total++;
+          if (e.owned) g.owned++;
+          bySeries.set(k, g);
+        }
+        const completed = [...bySeries].filter(([, g]) => g.total > 0 && g.owned === g.total).map(([k]) => k);
+        return { ...d, owned: entries.filter((e) => e.owned).length, total: entries.length, completed };
       }),
     ),
   );
@@ -83,6 +94,15 @@ export function ProfileView({ profile, preview }: { profile: PublicProfile; prev
                   </span>
                   <span className="text-sub">→</span>
                 </span>
+                {d.completed.length > 0 && (
+                  <span className="mt-2 flex flex-wrap gap-1">
+                    {d.completed.map((c) => (
+                      <span key={c} className="rounded-full bg-gold-soft px-2 py-0.5 text-[10px] font-bold">
+                        ★ {c} コンプ
+                      </span>
+                    ))}
+                  </span>
+                )}
               </Link>
             </li>
           ))}

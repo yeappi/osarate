@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ActionForm } from "@/components/ActionForm";
 import { Loading } from "@/components/Loading";
+import { EmptyState } from "@/components/EmptyState";
 import { StickerView } from "@/components/StickerView";
 import { markGiftsSeen, report } from "@/client/mutations";
+import { haptic } from "@/client/haptic";
 import { useMe, useTransfers } from "@/client/queries";
 
 export default function GiftsPage() {
@@ -13,6 +15,7 @@ export default function GiftsPage() {
   const uid = me.data?.userId ?? null;
   const rows = useTransfers(uid);
   const [tab, setTab] = useState<"in" | "out">("in");
+  const [revealed, setRevealed] = useState<Set<number>>(new Set());
 
   // 開いた時点の未読を覚えておき（NEW表示用）、既読にする
   const unseen = useRef<Set<number> | null>(null);
@@ -46,7 +49,9 @@ export default function GiftsPage() {
       {!rows.data ? (
         <Loading error={rows.error} />
       ) : list.length === 0 ? (
-        <p className="card text-center text-sm text-sub">{tab === "in" ? "まだもらった贈りものはありません" : "まだ贈ったことはありません"}</p>
+        <EmptyState image="/stickers/dream_dd_wax.png" title={tab === "in" ? "まだ贈りものは届いていません" : "まだ贈ったことはありません"}>
+          {tab === "in" ? "フォローした人から届くと、ここに出ます" : "手持ちやバッグ、相手の図鑑から贈れます"}
+        </EmptyState>
       ) : (
         <ul className="space-y-2">
           {list.map((r) => {
@@ -54,8 +59,33 @@ export default function GiftsPage() {
             const other = received ? r.from : r.to;
             const isNew = received && (unseen.current?.has(r.id) ?? !r.seen_at);
             const t = r.sticker.type;
+            // 届いたばかりの贈りものは、リボンの箱をタップして開ける
+            if (isNew && !revealed.has(r.id)) {
+              return (
+                <li key={r.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRevealed(new Set([...revealed, r.id]));
+                      haptic(["epic", "legend"].includes(t.rarity) ? "big" : "success");
+                    }}
+                    className="animate-wiggle flex w-full items-center gap-3 rounded-[22px] border-2 border-accent bg-accent-soft p-3 text-left"
+                  >
+                    <span className="relative flex h-14 w-14 items-center justify-center rounded-xl bg-accent">
+                      <span className="absolute inset-y-0 left-1/2 w-2 -translate-x-1/2 bg-gold" />
+                      <span className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 bg-gold" />
+                    </span>
+                    <span className="flex-1 text-sm">
+                      <b>{other.display_name}</b> さんから贈りもの
+                      <br />
+                      <span className="text-xs text-accent-ink">タップして開ける</span>
+                    </span>
+                  </button>
+                </li>
+              );
+            }
             return (
-              <li key={r.id} className={`card space-y-2 text-sm ${isNew ? "border-accent" : ""}`}>
+              <li key={r.id} className={`card space-y-2 text-sm ${isNew ? "animate-pop border-accent" : ""}`}>
                 <div className="flex gap-3">
                   <StickerView name={t.name} imagePath={t.image_path} w={t.width} h={t.height} fixed={56} />
                   <div className="flex-1">
@@ -67,6 +97,15 @@ export default function GiftsPage() {
                       <Link href={`/u/${other.handle}`} className="link">{other.display_name}</Link> {received ? "さんから" : "さんへ"}・
                       {r.kind === "gift" ? "ギフト" : "プレゼント"}・{new Date(r.created_at).toLocaleDateString("ja-JP")}
                     </div>
+                    {!received && r.kind === "gift" && (
+                      <div className="mt-0.5 text-xs">
+                        {r.sticker.state === "opened" && r.sticker.owner_id === r.to_user ? (
+                          <span className="text-mint">✓ 開封してもらえました</span>
+                        ) : (
+                          <span className="text-sub">まだ未開封</span>
+                        )}
+                      </div>
+                    )}
                     {r.kind === "gift" && received && (
                       <div className="mt-0.5 text-xs">
                         還元 <b className="num text-accent-ink">{r.reward}pt</b>

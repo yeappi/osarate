@@ -1,3 +1,7 @@
+"use client";
+
+import { useRef } from "react";
+import { zoomSticker } from "./Feedback";
 import { STICKER_BUCKET } from "@/config/app";
 
 export function stickerImageUrl(path: string | null): string | null {
@@ -25,6 +29,39 @@ export function StickerView({ name, imagePath, w, h, scale = 1, fixed, sealed, g
   const height = fixed ?? h * scale;
   const url = stickerImageUrl(imagePath);
   const tile = fixed !== undefined;
+  // 一覧の小さなシールは、長押しで大きく見られる
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fired = useRef(false);
+  const cancel = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  };
+  const press = tile
+    ? {
+        onPointerDown: () => {
+          cancel();
+          fired.current = false;
+          timer.current = setTimeout(() => {
+            fired.current = true;
+            zoomSticker({ name, imagePath, w, h });
+          }, 450);
+        },
+        // 長押しで拡大したあとの「タップ」は、下のボタンに伝えない
+        onClickCapture: (e: React.MouseEvent) => {
+          if (fired.current) {
+            e.preventDefault();
+            e.stopPropagation();
+            fired.current = false;
+          }
+        },
+        onPointerUp: cancel,
+        onPointerLeave: cancel,
+        onPointerMove: (e: React.PointerEvent) => {
+          if (Math.abs(e.movementX) + Math.abs(e.movementY) > 6) cancel();
+        },
+        onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+      }
+    : {};
 
   return (
     <div
@@ -32,7 +69,8 @@ export function StickerView({ name, imagePath, w, h, scale = 1, fixed, sealed, g
       className={`relative flex shrink-0 items-center justify-center overflow-hidden ${
         tile ? `rounded-tile ${sealed ? "border-[1.5px] border-dashed border-line bg-muted" : "bg-paper"}` : ""
       } ${gray ? "opacity-35 grayscale" : ""}`}
-      style={{ width, height }}
+      style={{ width, height, WebkitTouchCallout: "none" }}
+      {...press}
     >
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element

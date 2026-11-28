@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { haptic } from "@/client/haptic";
 import { ActionForm } from "@/components/ActionForm";
 import { Loading } from "@/components/Loading";
 import { Sheet } from "@/components/Sheet";
+import { EmptyState } from "@/components/EmptyState";
 import { StickerView } from "@/components/StickerView";
 import { openSticker, sendGift } from "@/client/mutations";
 import { useMe, useStickers } from "@/client/queries";
@@ -32,7 +34,9 @@ export default function BagPage() {
       {!sealed.data ? (
         <Loading error={sealed.error} />
       ) : sealed.data.length === 0 ? (
-        <p className="card text-center text-sm text-sub">未開封のシールはありません</p>
+        <EmptyState image="/stickers/pop_pop_capsule.png" title="未開封のシールはありません">
+          <Link href="/dex/main" className="link">図鑑</Link>で買うと、ここに届きます
+        </EmptyState>
       ) : (
         <ul className="space-y-2">
           {groups.map(({ first: s, count }) => (
@@ -49,7 +53,11 @@ export default function BagPage() {
                   variant="primary"
                   confirm={`${s.type.name} を開封しますか？\n開封すると手持ちに入って、シール帳に貼れるようになります。`}
                   confirmLabel="開封する"
-                  onDone={(r) => r?.ok && setOpened(s)}
+                  onDone={(r) => {
+                    if (!r?.ok) return;
+                    setOpened(s);
+                    haptic(["epic", "legend"].includes(s.type.rarity) ? "big" : "success");
+                  }}
                 >
                   <input type="hidden" name="stickerId" value={s.id} />
                 </ActionForm>
@@ -73,7 +81,7 @@ export default function BagPage() {
           <div className="flex flex-col items-center gap-4 pb-2 text-center">
             <p className="font-round text-sm font-bold text-accent-ink">開封しました！</p>
             <div className="paper flex min-h-52 w-full items-center justify-center rounded-[22px] p-6">
-              <div className="animate-pop">
+              <div className={`animate-pop rounded-full ${["epic", "legend"].includes(opened.type.rarity) ? "animate-glow" : ""}`}>
                 <StickerView
                   name={opened.type.name}
                   imagePath={opened.type.image_path}
@@ -84,6 +92,7 @@ export default function BagPage() {
               </div>
             </div>
             <p className="font-bold">{opened.type.name}</p>
+            {["epic", "legend"].includes(opened.type.rarity) && <p className="-mt-3 text-xs font-bold text-accent-ink">めずらしいシールです！</p>}
             <div className="flex w-full gap-2">
               <button className="btn flex-1" onClick={() => setOpened(null)}>
                 続けて開ける

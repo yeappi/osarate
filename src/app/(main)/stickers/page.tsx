@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ActionForm } from "@/components/ActionForm";
 import { BookTile } from "@/components/BookTile";
 import { Loading } from "@/components/Loading";
+import { EmptyState } from "@/components/EmptyState";
 import { StickerView } from "@/components/StickerView";
 import { sendPresent } from "@/client/mutations";
 import { useBooks, useMe, useStickers, useStorage } from "@/client/queries";
@@ -52,9 +53,9 @@ export default function StickersPage() {
       {!storage.data ? (
         <Loading error={storage.error} />
       ) : storage.data.length === 0 ? (
-        <div className="card text-center text-sm text-sub">
-          まだありません。<Link href="/dex/main" className="link">図鑑</Link>でシールを買って、開封するとここに入ります
-        </div>
+        <EmptyState image="/stickers/mat_puffy_dot.png" title="手持ちのシールはまだありません">
+          <Link href="/dex/main" className="link">図鑑</Link>でシールを買って、バッグで開封するとここに入ります
+        </EmptyState>
       ) : (
         <>
           {toParam && <p className="mb-2 rounded-xl bg-accent-soft px-3 py-2 text-xs text-accent-ink">{toParam} さんへのお礼：贈りたいシールの「プレゼントする」を押してください</p>}

@@ -190,7 +190,7 @@ export type TransferRow = {
   rate_pct: number | null;
   created_at: string;
   seen_at: string | null;
-  sticker: { type: { name: string; image_path: string | null; width: number; height: number } };
+  sticker: { state: "sealed" | "opened"; owner_id: string; type: { name: string; image_path: string | null; width: number; height: number; rarity: string } };
   from: { handle: string; display_name: string };
   to: { handle: string; display_name: string };
 };
@@ -200,7 +200,7 @@ export const useTransfers = (userId: string | null) =>
     const r = await sb()
       .from("oshi_transfers")
       .select(
-        "id, kind, from_user, to_user, message, reward, rate_pct, created_at, seen_at, sticker:oshi_stickers(type:oshi_sticker_types(name, image_path, width, height)), from:oshi_profiles!oshi_transfers_from_user_fkey(handle, display_name), to:oshi_profiles!oshi_transfers_to_user_fkey(handle, display_name)",
+        "id, kind, from_user, to_user, message, reward, rate_pct, created_at, seen_at, sticker:oshi_stickers(state, owner_id, type:oshi_sticker_types(name, image_path, width, height, rarity)), from:oshi_profiles!oshi_transfers_from_user_fkey(handle, display_name), to:oshi_profiles!oshi_transfers_to_user_fkey(handle, display_name)",
       )
       .or(`from_user.eq.${userId},to_user.eq.${userId}`)
       .order("created_at", { ascending: false })

@@ -7,6 +7,7 @@ import { StickerView } from "@/components/StickerView";
 import { placeCentered } from "@/domain/canvas";
 import type { CanvasItem } from "@/domain/types";
 import { placeSticker, removeSticker } from "@/client/mutations";
+import { haptic } from "@/client/haptic";
 import { CanvasBoard } from "./CanvasBoard";
 
 type StorageSticker = { sticker_id: string; name: string; image_path: string | null; w: number; h: number };
@@ -42,6 +43,7 @@ export function BookEditor({ bookId, pageCount, canvas, items, storage, editable
   const [editing, setEditing] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
   const [lastPlaced, setLastPlaced] = useState<string | null>(null);
+  const [flip, setFlip] = useState<"next" | "prev" | null>(null);
   const [pending, startTransition] = useTransition();
   const width = useDisplayWidth();
   const touch = useRef<number | null>(null);
@@ -82,14 +84,23 @@ export function BookEditor({ bookId, pageCount, canvas, items, storage, editable
       return;
     }
     const id = picked;
-    run(() => placeSticker({ stickerId: id, bookId, page, ...pos }), () => setLastPlaced(id));
+    run(() => placeSticker({ stickerId: id, bookId, page, ...pos }), () => {
+      setLastPlaced(id);
+      haptic("success");
+    });
   }
 
   const go = (p: number) => {
     if (p < 1 || p > pageCount) return;
+    setFlip(p > page ? "next" : "prev");
     setPage(p);
     setPicked(null);
   };
+
+  // ドラッグで動かした：同じページの別の場所に貼り直す
+  function onItemDrop(id: string, x: number, y: number) {
+    run(() => placeSticker({ stickerId: id, bookId, page, x, y }), () => haptic("tap"));
+  }
 
   return (
     <div className="space-y-3">
@@ -98,8 +109,9 @@ export function BookEditor({ bookId, pageCount, canvas, items, storage, editable
           <button aria-label="前のページ" className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface disabled:text-line" disabled={page <= 1} onClick={() => go(page - 1)}>
             <Icon name="back" size={16} strokeWidth={2} />
           </button>
-          <span className="num w-14 text-center text-sm">
+          <span className="num w-16 text-center text-sm">
             {page} <span className="text-sub">/ {pageCount}</span>
+            {pageItems.length >= 8 && <span className="ml-0.5 text-gold" title="にぎやかなページ">★</span>}
           </span>
           <button aria-label="次のページ" className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface disabled:text-line" disabled={page >= pageCount} onClick={() => go(page + 1)}>
             <Icon name="next" size={16} strokeWidth={2} />
@@ -122,7 +134,7 @@ export function BookEditor({ bookId, pageCount, canvas, items, storage, editable
       <div
         onTouchStart={(e) => (touch.current = e.touches[0].clientX)}
         onTouchEnd={(e) => {
-          if (touch.current === null || picked) return;
+          if (touch.current === null || picked || canEdit) return;
           const dx = e.changedTouches[0].clientX - touch.current;
           touch.current = null;
           if (dx > 60) go(page - 1);
@@ -130,6 +142,9 @@ export function BookEditor({ bookId, pageCount, canvas, items, storage, editable
         }}
       >
         <CanvasBoard
+          key={page}
+          flip={flip}
+          onItemDrop={canEdit ? onItemDrop : undefined}
           canvas={canvas}
           items={pageItems}
           displayWidth={width}
@@ -144,7 +159,7 @@ export function BookEditor({ bookId, pageCount, canvas, items, storage, editable
       {canEdit && (
         <>
           <div className="flex min-h-9 items-center justify-center gap-2 text-center text-xs text-sub">
-            {picked ? (pickedIsPlaced ? "移動先をタップ" : "貼りたい場所をタップ") : "下の手持ちからシールを選ぶか、貼ってあるシールをタップ"}
+            {picked ? (pickedIsPlaced ? "移動先をタップ（ドラッグでも動かせます）" : "貼りたい場所をタップ") : "手持ちから選んでタップで貼る。貼ったシールはドラッグで動かせます"}
             {pending && "（処理中…）"}
             {picked && pickedIsPlaced && (
               <button

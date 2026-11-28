@@ -122,11 +122,33 @@ function Ranking({ metric, period, me }: { metric: string; period: string; me: s
       {rows.data.length === 0 ? (
         <p className="text-sm text-sub">この期間のランキングはまだありません。期間を「累計」にすると見られるかもしれません</p>
       ) : (
+        <>
+        <div className="mb-3 grid grid-cols-3 items-end gap-2">
+          {[1, 0, 2].map((i) => {
+            const r = rows.data[i];
+            if (!r) return <div key={i} />;
+            const h = i === 0 ? "h-28" : i === 1 ? "h-20" : "h-16";
+            const medal = ["bg-gold", "bg-line", "bg-[#e2b48a]"][i];
+            return (
+              <Link key={r.user_id} href={`/u/${r.handle}`} className="flex flex-col items-center gap-1 text-center">
+                <span className={`flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-surface bg-accent-soft font-round font-bold text-accent-ink shadow ${i === 0 ? "h-14 w-14" : ""}`}>
+                  <AvatarImage url={r.avatar_url} letter={r.display_name.slice(0, 1)} />
+                </span>
+                <span className="w-full truncate text-[11px] font-bold">{r.display_name}</span>
+                <span className={`flex w-full flex-col items-center justify-center rounded-t-xl ${medal} ${h}`}>
+                  <span className="num text-lg">{i + 1}</span>
+                  <span className="num text-[10px]">{formatNum(r.value)}</span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
         <ol className="space-y-2">
-          {rows.data.map((r) => (
+          {rows.data.slice(3).map((r) => (
             <UserRow key={r.user_id} p={r} highlight={r.user_id === me} right={<span className="flex items-baseline gap-2"><span className="num text-sm text-accent-ink">{r.rnk}位</span><span className="num">{formatNum(r.value)}</span></span>} />
           ))}
         </ol>
+        </>
       )}
     </div>
   );

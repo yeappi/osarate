@@ -107,16 +107,26 @@ export function DexGrid(props: Props) {
       </div>
       {cat !== "all" && seriesList.length > 1 && (
         <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1">
-          {["", ...seriesList].map((s) => (
-            <button
-              key={s || "_all"}
-              type="button"
-              onClick={() => setSeries(s)}
-              className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] ${series === s ? "border-ink text-ink" : "border-line text-sub"}`}
-            >
-              {s || "すべて"}
-            </button>
-          ))}
+          {["", ...seriesList].map((s) => {
+            const inS = inCat.filter((e) => e.series === s);
+            const own = inS.filter((e) => e.owned).length;
+            const left = inS.length - own;
+            return (
+              <button
+                key={s || "_all"}
+                type="button"
+                onClick={() => setSeries(s)}
+                className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] ${series === s ? "border-ink text-ink" : "border-line text-sub"} ${s && left === 0 ? "bg-gold-soft" : ""}`}
+              >
+                {s || "すべて"}
+                {s && (
+                  <span className="ml-1 font-num">
+                    {left === 0 ? "★コンプ" : left === 1 ? "あと1枚！" : `${own}/${inS.length}`}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
 
