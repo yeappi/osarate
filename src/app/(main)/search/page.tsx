@@ -1,22 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { AvatarImage } from "@/features/profile/AvatarImage";
+import { useState } from "react";
 import { Loading } from "@/components/Loading";
 import { RANKING_METRICS, RANKING_PERIODS } from "@/config/app";
 import { useFollowing, useMe, useRanking, useSearch } from "@/client/queries";
 import { formatNum } from "@/domain/format";
 import type { PublicProfile } from "@/domain/types";
 
-function UserRow({ p, right, highlight }: { p: Pick<PublicProfile, "handle" | "display_name" | "avatar_url">; right?: React.ReactNode; highlight?: boolean }) {
+function UserRow({ p, right }: { p: Pick<PublicProfile, "handle" | "display_name">; right?: React.ReactNode }) {
   return (
     <li>
-      <Link href={`/u/${p.handle}`} className={`card flex items-center gap-3 text-sm ${highlight ? "border-accent bg-accent-soft" : ""}`}>
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent-soft font-round font-bold text-accent-ink">
-          <AvatarImage url={p.avatar_url} letter={p.display_name.slice(0, 1)} />
-        </span>
-        <span className="min-w-0 flex-1 truncate">
+      <Link href={`/u/${p.handle}`} className="card flex items-center justify-between text-sm">
+        <span>
           {p.display_name} <span className="text-xs text-sub">@{p.handle}</span>
         </span>
         {right}
@@ -32,18 +28,8 @@ export default function SearchPage() {
   const [input, setInput] = useState("");
   const [q, setQ] = useState("");
   const [metric, setMetric] = useState<string>("charm");
-  const [period, setPeriod] = useState<string>("week");
+  const [period, setPeriod] = useState<string>("day");
   const userId = me.data?.userId ?? null;
-
-  // 入力中に検索する（少し待ってから）
-  useEffect(() => {
-    const v = input.trim();
-    const t = setTimeout(() => {
-      setQ(v);
-      if (v) setTab("search");
-    }, 350);
-    return () => clearTimeout(t);
-  }, [input]);
 
   return (
     <div>
@@ -55,7 +41,7 @@ export default function SearchPage() {
           setTab("search");
         }}
       >
-        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="ユーザーIDか名前で検索" type="search" className="input flex-1" />
+        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="ユーザーを検索" className="input flex-1" />
         <button className="btn">検索</button>
       </form>
       <nav className="mb-3 flex gap-2">
@@ -113,43 +99,18 @@ function Following({ userId }: { userId: string | null }) {
 function Ranking({ metric, period, me }: { metric: string; period: string; me: string | null }) {
   const rows = useRanking(metric, period, me);
   if (!rows.data) return <Loading error={rows.error} />;
-  const data = rows.data;
-  const mine = data.find((r) => r.user_id === me);
+  const mine = rows.data.find((r) => r.user_id === me);
   return (
     <div>
-      <p className="mb-2 rounded-2xl bg-muted px-3 py-2 text-sm">
-        あなた：{mine ? <b className="num">{mine.rnk}位（{formatNum(mine.value)}）</b> : "まだランク外。シールを集めたり贈ったりすると載ります"}
-      </p>
+      <p className="mb-2 text-sm">あなた：{mine ? `${mine.rnk}位（${formatNum(mine.value)}）` : "圏外"}</p>
       {rows.data.length === 0 ? (
-        <p className="text-sm text-sub">この期間のランキングはまだありません。期間を「累計」にすると見られるかもしれません</p>
+        <p className="text-sm text-sub">まだランキングがありません</p>
       ) : (
-        <>
-        <div className="mb-3 grid grid-cols-3 items-end gap-2">
-          {[1, 0, 2].map((i) => {
-            const r = data[i];
-            if (!r) return <div key={i} />;
-            const h = i === 0 ? "h-28" : i === 1 ? "h-20" : "h-16";
-            const medal = ["bg-gold", "bg-line", "bg-[#e2b48a]"][i];
-            return (
-              <Link key={r.user_id} href={`/u/${r.handle}`} className="flex flex-col items-center gap-1 text-center">
-                <span className={`flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-surface bg-accent-soft font-round font-bold text-accent-ink shadow ${i === 0 ? "h-14 w-14" : ""}`}>
-                  <AvatarImage url={r.avatar_url} letter={r.display_name.slice(0, 1)} />
-                </span>
-                <span className="w-full truncate text-[11px] font-bold">{r.display_name}</span>
-                <span className={`flex w-full flex-col items-center justify-center rounded-t-xl ${medal} ${h}`}>
-                  <span className="num text-lg">{i + 1}</span>
-                  <span className="num text-[10px]">{formatNum(r.value)}</span>
-                </span>
-              </Link>
-            );
-          })}
-        </div>
         <ol className="space-y-2">
-          {rows.data.slice(3).map((r) => (
-            <UserRow key={r.user_id} p={r} highlight={r.user_id === me} right={<span className="flex items-baseline gap-2"><span className="num text-sm text-accent-ink">{r.rnk}位</span><span className="num">{formatNum(r.value)}</span></span>} />
+          {rows.data.map((r) => (
+            <UserRow key={r.user_id} p={r} right={<span className="flex items-baseline gap-2"><span className="num text-sm text-accent-ink">{r.rnk}位</span><span className="num">{formatNum(r.value)}</span></span>} />
           ))}
         </ol>
-        </>
       )}
     </div>
   );

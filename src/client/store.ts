@@ -85,9 +85,3 @@ export function clearCache() {
   cache.clear();
   emit();
 }
-
-/** 表示中の1つのデータだけ取り直す（未読数の定期確認など） */
-export function refresh(key: string) {
-  const a = active.get(key);
-  if (a) load(key, a.fetcher);
-}

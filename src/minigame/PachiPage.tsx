@@ -15,33 +15,22 @@ export function PachiPage() {
   const cfg = useSpinConfig();
   const prizes = useListings("prize");
   const balls = me.data?.wallet?.balls ?? 0;
-  const points = me.data?.wallet?.points ?? 0;
 
   return (
     <div className="space-y-4">
-      <h1 className="h2 mt-1">遊び場：パチ屋</h1>
-      <div className="grid grid-cols-2 gap-2 text-center">
-        <div className="rounded-2xl bg-muted py-2">
-          <div className="text-[11px] text-sub">持ち玉</div>
-          <div className="num text-xl">{formatNum(balls)}</div>
-        </div>
-        <div className="rounded-2xl bg-muted py-2">
-          <div className="text-[11px] text-sub">ポイント</div>
-          <div className="num text-xl">{formatPt(points)}</div>
-        </div>
-      </div>
-      <p className="text-xs text-sub">
-        ポイントで玉を借りて台を回し、増えた玉は精算してポイントに戻すか、景品と交換できます。1pt = {cfg.rateIn}玉、精算は1玉 = {cfg.rateOut}pt です。
+      <h1 className="h2">遊び場：パチ屋</h1>
+      <p className="text-sm">
+        持ち玉 <b>{formatNum(balls)}</b>　/　{formatPt(me.data?.wallet?.points)}
       </p>
 
-      <section className="card space-y-3">
-        <ActionForm action={lend} submitLabel="玉を借りる" variant="primary">
-          <input key={`l${points}`} name="points" type="number" min={1} max={Math.max(1, points)} defaultValue={Math.max(1, Math.min(1000, points))} inputMode="numeric" className="input w-28" />
-          <span className="text-xs text-sub">pt 分</span>
+      <section className="card space-y-2">
+        <ActionForm action={lend} submitLabel="玉を借りる">
+          <input name="points" type="number" min={1} defaultValue={1000} className="input w-24" />
+          <span className="text-xs">pt → {cfg.rateIn}玉/pt</span>
         </ActionForm>
         <ActionForm action={cashout} submitLabel="精算する">
-          <input key={balls} name="balls" type="number" min={1} defaultValue={balls || 1} inputMode="numeric" className="input w-28" />
-          <span className="text-xs text-sub">玉を精算</span>
+          <input key={balls} name="balls" type="number" min={1} defaultValue={balls || 1} className="input w-24" />
+          <span className="text-xs">玉 → {cfg.rateOut}pt/玉</span>
         </ActionForm>
       </section>
 
@@ -60,7 +49,7 @@ export function PachiPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {[1, cfg.max].map((n) => (
-                    <ActionForm key={n} action={spin} submitLabel={`${n}回転`} variant={n === 1 ? "plain" : "primary"} inline>
+                    <ActionForm key={n} action={spin} submitLabel={`${n}回転`}>
                       <input type="hidden" name="machine" value={m.id} />
                       <input type="hidden" name="spins" value={n} />
                     </ActionForm>
@@ -77,7 +66,7 @@ export function PachiPage() {
         {!prizes.data ? (
           <Loading error={prizes.error} />
         ) : prizes.data.length === 0 ? (
-          <p className="card text-center text-sm text-sub">いま交換できる景品はありません。入荷をお楽しみに</p>
+          <p className="text-sm text-sub">景品はありません</p>
         ) : (
           <ul className="space-y-2">
             {prizes.data.map((p) => (

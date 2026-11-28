@@ -87,7 +87,7 @@ export const presentBook: FormAction = async (fd) => {
 };
 
 export const openSticker: FormAction = (fd) =>
-  rpc("oshi_open_sticker", { p_sticker_id: s(fd, "stickerId") }, () => "開封しました。手持ちに入りました");
+  rpc("oshi_open_sticker", { p_sticker_id: s(fd, "stickerId") }, () => "開封しました。保管に入りました");
 
 export const sendGift: FormAction = async (fd) => {
   const to = await userIdOf(s(fd, "to"));
@@ -113,12 +113,8 @@ export const removeSticker = (stickerId: string) => rpc("oshi_remove_sticker", {
 // ---------------------------------------------------------------- 購入
 
 type BuyResult = { spent: number; points: number; gift: { reward: number } | null };
-const buyMessage = (gifted: boolean, opened = false) => (d: BuyResult) =>
-  gifted
-    ? `ギフトしました（${d.spent}pt）。相手に ${d.gift?.reward ?? 0}pt 還元されました`
-    : opened
-      ? `購入しました。手持ちに入りました（残り ${d.points}pt）`
-      : `購入しました。未開封でバッグに入りました（残り ${d.points}pt）`;
+const buyMessage = (gifted: boolean) => (d: BuyResult) =>
+  gifted ? `ギフトしました（${d.spent}pt、相手に還元 ${d.gift?.reward ?? 0}pt）` : `購入しました（${d.spent}pt、残り ${d.points}pt）`;
 
 export const buySticker: FormAction = async (fd) => {
   const handle = s(fd, "giftTo");
@@ -134,18 +130,18 @@ export const buySticker: FormAction = async (fd) => {
       p_gift_to: to,
       p_message: s(fd, "message") || null,
     },
-    buyMessage(!!to, b(fd, "open")),
+    buyMessage(!!to),
   );
 };
 
 export const buyListing: FormAction = async (fd) => {
-  const handle = s(fd, "giftTo") || s(fd, "to");
+  const handle = s(fd, "giftTo");
   const to = handle ? await userIdOf(handle) : null;
   if (handle && !to) return NO_USER;
   return rpc<BuyResult>(
     "oshi_buy_listing",
     { p_request_id: req(fd), p_listing_id: n(fd, "listingId"), p_open: b(fd, "open"), p_gift_to: to, p_message: s(fd, "message") || null },
-    buyMessage(!!to, b(fd, "open")),
+    buyMessage(!!to),
   );
 };
 

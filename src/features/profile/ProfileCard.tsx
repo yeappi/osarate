@@ -1,14 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Sheet } from "@/components/Sheet";
 import { ActionForm } from "@/components/ActionForm";
 import { Icon } from "@/components/Icon";
 import { StickerView } from "@/components/StickerView";
 import { follow as followAction } from "@/client/mutations";
-import { bookTone } from "@/components/BookTile";
-import { AvatarImage } from "./AvatarImage";
 import { formatNum } from "@/domain/format";
 import type { CanvasItem, PublicProfile } from "@/domain/types";
 
@@ -17,23 +13,21 @@ type Props = {
   isSelf: boolean;
   /** ログインしていない閲覧者 */
   guest?: boolean;
-  /** 操作ボタンを出さない（自分のプロフィールのプレビュー） */
-  readonly?: boolean;
   follow: { following: number; followers: number; isFollowing: boolean };
   favorites: { sticker_id: string; name: string; image_path: string | null; width: number; height: number }[];
-  favBooks: { id: string; name: string; page_count: number; theme?: string }[];
+  favBooks: { id: string; name: string; page_count: number }[];
   background: CanvasItem[];
   bgCanvas: { w: number; h: number };
 };
 
 const CARD_W = 358;
-const FIXED = 96; // TOP3・お気に入りシール帳の表示サイズ（固有サイズに関係なく固定）
+const FIXED = 88; // TOP3・お気に入りシール帳の表示サイズ（固有サイズに関係なく固定）
 
 /**
  * プロフィールの名刺部分（最初の1画面）。
  * 将来のプロフィール着せ替えは、この section に data-theme を付けて切り替える。
  */
-export function ProfileCard({ profile, isSelf, guest, readonly, follow, favorites, favBooks, background, bgCanvas }: Props) {
+export function ProfileCard({ profile, isSelf, guest, follow, favorites, favBooks, background, bgCanvas }: Props) {
   const scale = CARD_W / bgCanvas.w;
   return (
     <section
@@ -50,7 +44,12 @@ export function ProfileCard({ profile, isSelf, guest, readonly, follow, favorite
       <div className="relative flex flex-col items-center gap-2.5 px-4 pb-5 pt-6">
         <div className="h-[84px] w-[84px] rounded-full bg-[conic-gradient(var(--t-accent),var(--t-gold),var(--t-mint),var(--t-accent))] p-[3px]">
           <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-[3px] border-surface bg-accent-soft font-round text-3xl font-bold text-accent-ink">
-            <AvatarImage url={profile.avatar_url} letter={profile.display_name.slice(0, 1)} />
+            {profile.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+            ) : (
+              profile.display_name.slice(0, 1)
+            )}
           </div>
         </div>
 
@@ -62,12 +61,10 @@ export function ProfileCard({ profile, isSelf, guest, readonly, follow, favorite
         <div className="mt-1 grid w-full grid-cols-2 gap-2.5">
           <div className="rounded-2xl bg-accent-soft px-3 py-2.5 text-center">
             <div className="text-[11px] font-medium text-accent-ink">魅力値</div>
-            <div className="text-[9px] text-accent-ink/70">持っているシールの合計</div>
             <div className="num text-[26px] leading-tight text-accent-ink">{formatNum(profile.charm_total)}</div>
           </div>
           <div className="rounded-2xl bg-mint-soft px-3 py-2.5 text-center">
             <div className="text-[11px] font-medium text-mint">応援力</div>
-            <div className="text-[9px] text-mint/70">贈ったシールの合計</div>
             <div className="num text-[26px] leading-tight text-mint">{formatNum(profile.support_total)}</div>
           </div>
         </div>
@@ -92,16 +89,9 @@ export function ProfileCard({ profile, isSelf, guest, readonly, follow, favorite
                 <div key={f.sticker_id} className="rounded-[18px] border-[3px] border-surface shadow-lift">
                   <StickerView name={f.name} imagePath={f.image_path} w={f.width} h={f.height} fixed={FIXED - 6} />
                 </div>
-              ) : isSelf ? (
-                <Link
-                  key={i}
-                  href="/me/edit"
-                  className="flex items-center justify-center rounded-[18px] border-[1.5px] border-dashed border-line text-[10px] text-sub"
-                  style={{ width: FIXED, height: FIXED }}
-                >
-                  ＋TOP3
-                </Link>
-              ) : null;
+              ) : (
+                <div key={i} className="rounded-[18px] border-[1.5px] border-dashed border-line" style={{ width: FIXED, height: FIXED }} />
+              );
             })}
           </div>
           {favBooks.length > 0 && (
@@ -110,11 +100,11 @@ export function ProfileCard({ profile, isSelf, guest, readonly, follow, favorite
                 <Link
                   key={b.id}
                   href={`/stickers/books/${b.id}`}
-                  className={`flex flex-col justify-end rounded-[18px] border-[3px] border-surface p-2 shadow-lift ${bookTone(b.theme, 0)}`}
+                  className="flex flex-col justify-end rounded-[18px] border-[3px] border-surface bg-accent-soft p-2 shadow-lift"
                   style={{ width: FIXED, height: FIXED }}
                 >
                   <span className="text-[11px] font-bold leading-tight">{b.name}</span>
-                  <span className="text-[10px] opacity-70">{b.page_count}P</span>
+                  <span className="text-[10px] text-sub">{b.page_count}P</span>
                 </Link>
               ))}
             </div>
@@ -122,61 +112,24 @@ export function ProfileCard({ profile, isSelf, guest, readonly, follow, favorite
         </div>
 
         <div className="mt-2 flex flex-wrap justify-center gap-2">
-          {readonly ? null : isSelf ? (
-            <>
-              <Link href="/me/edit" className="btn">編集する</Link>
-              <Link href={`/u/${profile.handle}?preview=1`} className="btn">みんなからの見え方</Link>
-            </>
+          {isSelf ? (
+            <Link href="/me/edit" className="btn">プロフィール・展示を編集</Link>
           ) : guest ? (
             <Link href="/signup" className="btn-primary">はじめて、フォローやギフトをする</Link>
           ) : (
             <>
-              <ActionForm
-                action={followAction}
-                submitLabel={follow.isFollowing ? "フォロー中 ✓" : "フォローする"}
-                variant={follow.isFollowing ? "plain" : "primary"}
-                confirm={follow.isFollowing ? `${profile.display_name} さんのフォローを解除しますか？` : undefined}
-                confirmLabel="解除する"
-                className="flex"
-              >
+              <ActionForm action={followAction} submitLabel={follow.isFollowing ? "フォロー中" : "フォロー"} className="flex">
                 <input type="hidden" name="target" value={profile.user_id} />
                 <input type="hidden" name="mode" value={follow.isFollowing ? "unfollow" : "follow"} />
               </ActionForm>
-              <GiftButton handle={profile.handle} name={profile.display_name} />
+              <Link href={`/u/${profile.handle}/dex/main`} className="btn-primary">
+                <Icon name="gift" size={16} strokeWidth={2} />
+                ギフトを贈る
+              </Link>
             </>
           )}
         </div>
       </div>
     </section>
-  );
-}
-
-/** 贈りものの選び方を2つ見せる（手持ちから／図鑑から） */
-function GiftButton({ handle, name }: { handle: string; name: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <button type="button" className="btn-accent" onClick={() => setOpen(true)}>
-        <Icon name="gift" size={16} strokeWidth={2} />
-        贈る
-      </button>
-      <Sheet open={open} onClose={() => setOpen(false)}>
-        <p className="mb-3 font-round font-bold">{name} さんに贈る</p>
-        <div className="grid grid-cols-2 gap-2">
-          <Link href={`/stickers?to=@${handle}`} className="card flex flex-col gap-1">
-            <b className="text-sm">手持ちから</b>
-            <span className="text-[11px] text-sub">開封済みのシールをプレゼント</span>
-          </Link>
-          <Link href={`/bag?to=@${handle}`} className="card flex flex-col gap-1">
-            <b className="text-sm">未開封を贈る</b>
-            <span className="text-[11px] text-sub">ギフト。相手にポイント還元あり</span>
-          </Link>
-          <Link href={`/u/${handle}/dex/main`} className="card col-span-2 flex flex-col gap-1">
-            <b className="text-sm">図鑑から買って贈る</b>
-            <span className="text-[11px] text-sub">相手が持っていないシールがわかります</span>
-          </Link>
-        </div>
-      </Sheet>
-    </>
   );
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Loading } from "@/components/Loading";
-import { DEXES, VISIBLE_DEXES } from "@/config/app";
+import { DEXES } from "@/config/app";
 import { useDex, useMe, useProfileByHandle } from "@/client/queries";
 import { DexGrid, DexProgress } from "@/features/dex/DexGrid";
 
@@ -31,8 +31,8 @@ export default function UserDexPage() {
       <p className="text-sm">
         <Link href={`/u/${p.handle}`} className="link">← {p.display_name}</Link>
       </p>
-      <nav className={`my-3 flex gap-2 ${VISIBLE_DEXES.length > 1 ? "" : "hidden"}`}>
-        {VISIBLE_DEXES.map((d) => (
+      <nav className="my-3 flex gap-2">
+        {DEXES.map((d) => (
           <Link key={d.slug} href={`/u/${p.handle}/dex/${d.slug}`} className={d.slug === slug ? "btn-primary min-h-9" : "btn"}>
             {d.name}
           </Link>
@@ -42,16 +42,13 @@ export default function UserDexPage() {
         <Loading error={entries.error} />
       ) : (
         <>
-          <div className="flex items-baseline justify-between">
-            <h1 className="font-round text-xl font-bold">{p.display_name} の図鑑</h1>
-            <span className="text-xs text-sub">
-              <b className="num text-sm text-ink">{entries.data.filter((e) => e.owned).length}</b> / {entries.data.length}
-            </span>
-          </div>
+          <h1 className="font-round text-xl font-bold">
+            {p.display_name} の図鑑：{dex.name}（{entries.data.filter((e) => e.owned).length} / {entries.data.length}）
+          </h1>
           <DexProgress owned={entries.data.filter((e) => e.owned).length} total={entries.data.length} />
           <div className="h-3" />
           {me.data?.userId ? (
-            <DexGrid entries={entries.data} mode="gift" giftToHandle={p.handle} giftToName={p.display_name} />
+            <DexGrid entries={entries.data} mode="gift" giftToHandle={p.handle} />
           ) : (
             <DexGrid entries={entries.data} mode="view" />
           )}

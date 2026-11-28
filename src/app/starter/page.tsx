@@ -17,52 +17,13 @@ export default function StarterPage() {
   const opts = useStarterOptions(hasProfile);
   const [sticker, setSticker] = useState<number | null>(null);
   const [book, setBook] = useState<number | null>(null);
-  const [done, setDone] = useState(false);
 
   useEffect(() => {
     if (!me.data || !me.fresh) return;
     if (!me.data.userId) router.replace("/login");
     else if (!me.data.profile) router.replace("/welcome");
-    else if (opts.data?.chosen && opts.fresh && !done) router.replace("/me");
-  }, [me.data, me.fresh, opts.data, opts.fresh, router, done]);
-
-  const BOOK_NOTE: Record<string, string> = {
-    kraft: "あたたかい紙の色。どんなシールにも合う",
-    midnight: "深い夜の色。キラキラしたシールが映える",
-    rose: "やわらかいバラ色。やさしい雰囲気に",
-  };
-
-  // 受け取った直後の見せ場
-  if (done && opts.data) {
-    const st = opts.data.stickers.find((x) => x.id === sticker);
-    const bk = opts.data.books.find((x) => x.id === book);
-    return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-5 p-6 text-center">
-        <p className="font-round text-sm font-bold text-accent-ink">受け取りました！</p>
-        <div className="paper flex w-full items-end justify-center gap-6 rounded-[26px] px-4 py-8">
-          {st && (
-            <div className="animate-pop">
-              <StickerView name={st.name} imagePath={st.image_path} w={st.width * 1.6} h={st.height * 1.6} />
-            </div>
-          )}
-          {bk && (
-            <div className={`animate-pop flex h-32 w-24 flex-col justify-end rounded-[10px_18px_18px_10px] p-2 text-left shadow-lg ${bookTone(bk.theme, 0)}`}>
-              <span className="text-[11px] font-bold leading-tight">{bk.name}</span>
-            </div>
-          )}
-        </div>
-        <div className="space-y-1 text-sm">
-          <p>
-            <b>{st?.name}</b> は未開封でバッグに入っています。
-          </p>
-          <p className="text-sub">開封してシール帳に貼るか、だれかに贈れます。プロフィールの「はじめてのクエスト」で、合計3,000ptもらえます。</p>
-        </div>
-        <button className="btn-primary min-h-12 w-full text-base" onClick={() => router.replace("/me")}>
-          はじめる
-        </button>
-      </main>
-    );
-  }
+    else if (opts.data?.chosen && opts.fresh) router.replace("/me");
+  }, [me.data, me.fresh, opts.data, opts.fresh, router]);
 
   if (!opts.data || opts.data.chosen) return <Loading error={me.error ?? opts.error} />;
   const { stickers, books } = opts.data;
@@ -110,11 +71,10 @@ export default function StarterPage() {
             </li>
           ))}
         </ul>
-        {book && <p className="mt-2 text-xs text-sub">{BOOK_NOTE[books.find((b) => b.id === book)?.theme ?? ""] ?? ""}</p>}
       </section>
 
       {sticker && book ? (
-        <ActionForm action={chooseStarter} submitLabel="この2つにする" variant="primary" className="flex flex-col gap-2" onDone={(r) => r?.ok && setDone(true)}>
+        <ActionForm action={chooseStarter} submitLabel="これにする" className="flex flex-col gap-2" onDone={(r) => r?.ok && router.replace("/me")}>
           <input type="hidden" name="stickerType" value={sticker} />
           <input type="hidden" name="bookType" value={book} />
         </ActionForm>

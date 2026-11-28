@@ -40,21 +40,6 @@ const PATHS: Record<string, React.ReactNode> = {
       <circle cx="12" cy="12" r="3" />
     </>
   ),
-  dex: (
-    <>
-      <rect x="4" y="4" width="7" height="7" rx="2" />
-      <rect x="13" y="4" width="7" height="7" rx="2" />
-      <rect x="4" y="13" width="7" height="7" rx="2" />
-      <rect x="13" y="13" width="7" height="7" rx="2" />
-    </>
-  ),
-  book: (
-    <>
-      <path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z" />
-      <path d="M5 17a3 3 0 0 1 3-3h11" />
-      <circle cx="12" cy="9" r="2" />
-    </>
-  ),
   back: <path d="M15 5l-7 7 7 7" />,
   next: <path d="M9 5l7 7-7 7" />,
   gift: <path d="M4 11h16v9H4zM12 11v9M3 7h18v4H3zM12 7c-2-4-6-3-6 0M12 7c2-4 6-3 6 0" />,
@@ -66,7 +51,7 @@ const PATHS: Record<string, React.ReactNode> = {
   ),
 };
 
-export function Icon({ name, size = 20, strokeWidth = 2 }: { name: keyof typeof PATHS | string; size?: number; strokeWidth?: number }) {
+export function Icon({ name, size = 20, strokeWidth = 1.8 }: { name: keyof typeof PATHS | string; size?: number; strokeWidth?: number }) {
   return (
     <svg
       width={size}

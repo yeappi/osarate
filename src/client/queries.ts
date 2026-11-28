@@ -144,7 +144,7 @@ type TypeMini = { name: string; image_path: string | null; width: number; height
 
 export type Showcase = {
   favorites: ({ sticker_id: string } & TypeMini)[];
-  books: { id: string; name: string; page_count: number; theme: string }[];
+  books: { id: string; name: string; page_count: number }[];
   background: CanvasItem[];
 };
 
@@ -156,18 +156,18 @@ export const useShowcase = (userId: string | null) =>
         .select("slot, sticker:oshi_stickers(id, type:oshi_sticker_types(name, image_path, width, height))")
         .eq("user_id", userId!)
         .order("slot"),
-      sb().from("oshi_profile_fav_books").select("slot, book:oshi_books(id, type:oshi_book_types(name, page_count, theme))").eq("user_id", userId!).order("slot"),
+      sb().from("oshi_profile_fav_books").select("slot, book:oshi_books(id, type:oshi_book_types(name, page_count))").eq("user_id", userId!).order("slot"),
       sb()
         .from("oshi_profile_bg")
         .select("sticker_id, x, y, sticker:oshi_stickers(type:oshi_sticker_types(name, image_path, width, height))")
         .eq("user_id", userId!),
     ]);
     const favRows = (must(fav) as unknown as { sticker: { id: string; type: TypeMini } }[] | null) ?? [];
-    const bookRows = (must(favBooks) as unknown as { book: { id: string; type: { name: string; page_count: number; theme: string } } }[] | null) ?? [];
+    const bookRows = (must(favBooks) as unknown as { book: { id: string; type: { name: string; page_count: number } } }[] | null) ?? [];
     const bgRows = (must(bg) as unknown as { sticker_id: string; x: number; y: number; sticker: { type: TypeMini } }[] | null) ?? [];
     return {
       favorites: favRows.map((f) => ({ sticker_id: f.sticker.id, ...f.sticker.type })),
-      books: bookRows.map((b) => ({ id: b.book.id, name: b.book.type.name, page_count: b.book.type.page_count, theme: b.book.type.theme })),
+      books: bookRows.map((b) => ({ id: b.book.id, name: b.book.type.name, page_count: b.book.type.page_count })),
       background: bgRows.map((b) => ({
         sticker_id: b.sticker_id,
         x: b.x,
@@ -190,7 +190,7 @@ export type TransferRow = {
   rate_pct: number | null;
   created_at: string;
   seen_at: string | null;
-  sticker: { state: "sealed" | "opened"; owner_id: string; type: { name: string; image_path: string | null; width: number; height: number; rarity: string } };
+  sticker: { type: { name: string } };
   from: { handle: string; display_name: string };
   to: { handle: string; display_name: string };
 };
@@ -200,7 +200,7 @@ export const useTransfers = (userId: string | null) =>
     const r = await sb()
       .from("oshi_transfers")
       .select(
-        "id, kind, from_user, to_user, message, reward, rate_pct, created_at, seen_at, sticker:oshi_stickers(state, owner_id, type:oshi_sticker_types(name, image_path, width, height, rarity)), from:oshi_profiles!oshi_transfers_from_user_fkey(handle, display_name), to:oshi_profiles!oshi_transfers_to_user_fkey(handle, display_name)",
+        "id, kind, from_user, to_user, message, reward, rate_pct, created_at, seen_at, sticker:oshi_stickers(type:oshi_sticker_types(name)), from:oshi_profiles!oshi_transfers_from_user_fkey(handle, display_name), to:oshi_profiles!oshi_transfers_to_user_fkey(handle, display_name)",
       )
       .or(`from_user.eq.${userId},to_user.eq.${userId}`)
       .order("created_at", { ascending: false })
