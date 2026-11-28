@@ -2,6 +2,8 @@ import { STICKER_BUCKET } from "@/config/app";
 
 export function stickerImageUrl(path: string | null): string | null {
   if (!path) return null;
+  // "/" で始まるものはアプリ同梱の公式シール（public/stickers）
+  if (path.startsWith("/")) return path;
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${STICKER_BUCKET}/${path}`;
 }
 
