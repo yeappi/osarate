@@ -31,6 +31,17 @@ export function BookEditor({ bookId, pageCount, canvas, items, storage, editable
   const [pending, startTransition] = useTransition();
 
   const pageItems = items.filter((i) => i.page === page);
+  // 同じシールはまとめて「×3」で出す（選ぶと、その中の1枚を貼る）
+  const groups = (() => {
+    const m = new Map<string, { first: StorageSticker; count: number }>();
+    for (const st of storage) {
+      const k = `${st.name}|${st.image_path ?? ""}`;
+      const g = m.get(k);
+      if (g) g.count++;
+      else m.set(k, { first: st, count: 1 });
+    }
+    return [...m.values()];
+  })();
   const pickedSize =
     storage.find((s) => s.sticker_id === picked) ?? items.find((i) => i.sticker_id === picked) ?? null;
   const pickedIsPlaced = !!items.find((i) => i.sticker_id === picked);
@@ -102,14 +113,17 @@ export function BookEditor({ bookId, pageCount, canvas, items, storage, editable
             <p className="text-sm text-sub">貼れるシールがありません</p>
           ) : (
             <ul className="flex flex-wrap gap-2">
-              {storage.map((s) => (
+              {groups.map(({ first: s, count }) => (
                 <li key={s.sticker_id}>
                   <button
                     type="button"
-                    className={`rounded-tile ${picked === s.sticker_id ? "ring-2 ring-accent" : ""}`}
+                    className={`relative rounded-tile ${picked === s.sticker_id ? "ring-2 ring-accent" : ""}`}
                     onClick={() => setPicked(picked === s.sticker_id ? null : s.sticker_id)}
                   >
                     <StickerView name={s.name} imagePath={s.image_path} w={s.w} h={s.h} fixed={56} />
+                    {count > 1 && (
+                      <span className="num absolute -right-1 -top-1 rounded-full bg-ink px-1.5 text-[10px] text-surface">×{count}</span>
+                    )}
                   </button>
                 </li>
               ))}

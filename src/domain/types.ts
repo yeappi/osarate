@@ -82,6 +82,10 @@ export type DexEntry = {
   rarity: string;
   dex_purchasable: boolean;
   owned: boolean;
+  /** theme / base / legend / starter / other */
+  category: string;
+  /** テーマ名・画風名 */
+  series: string;
 };
 
 export type RankingRow = {

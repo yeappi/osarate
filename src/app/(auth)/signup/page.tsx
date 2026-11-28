@@ -12,6 +12,9 @@ export default function SignUpPage() {
         <input name="email" type="email" required placeholder="メールアドレス" className="input" autoComplete="email" />
         <input name="password" type="password" required minLength={8} placeholder="パスワード（8文字以上）" className="input" autoComplete="new-password" />
       </ActionForm>
+      <p className="text-xs text-sub">
+        登録すると、<Link href="/terms" className="link">利用規約</Link>と<Link href="/privacy" className="link">プライバシーポリシー</Link>に同意したものとみなします。
+      </p>
       <p className="text-sm">
         <Link href="/login" className="link">ログインへ戻る</Link>
       </p>

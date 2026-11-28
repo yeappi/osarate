@@ -34,7 +34,10 @@ export function CanvasBoard({ canvas, items, displayWidth = 320, selectedId, onC
         onCanvasTap(p.x, p.y);
       }}
     >
-      {items.map((it) => (
+      {items.map((it) => {
+        // 小さいシールでも指で触れるように、見えない触れる範囲を最低44pxまで広げる
+        const pad = Math.max(0, (44 - Math.min(it.w, it.h) * scale) / 2);
+        return (
         <button
           type="button"
           key={it.sticker_id}
@@ -46,9 +49,11 @@ export function CanvasBoard({ canvas, items, displayWidth = 320, selectedId, onC
             onItemTap(it.sticker_id);
           }}
         >
+          {pad > 0 && <span aria-hidden className="absolute" style={{ inset: -pad }} />}
           <StickerView name={it.name} imagePath={it.image_path} w={it.w} h={it.h} scale={scale} />
         </button>
-      ))}
+        );
+      })}
     </div>
   );
 }

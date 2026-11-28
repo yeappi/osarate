@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ActionForm } from "@/components/ActionForm";
 import { StickerView } from "@/components/StickerView";
 import { buySticker } from "@/client/mutations";
@@ -28,11 +29,57 @@ export function DexProgress({ owned, total }: { owned: number; total: number }) 
   );
 }
 
+const CATEGORIES: { key: string; label: string }[] = [
+  { key: "all", label: "すべて" },
+  { key: "theme", label: "テーマ" },
+  { key: "base", label: "基礎" },
+  { key: "legend", label: "高額" },
+  { key: "starter", label: "はじまり" },
+  { key: "other", label: "その他" },
+];
+
 /** 図鑑の一覧。self=自分用に購入、gift=相手へ購入＋ギフト、view=閲覧のみ */
 export function DexGrid(props: Props) {
-  const { entries } = props;
-  if (entries.length === 0) return <p className="text-sm text-sub">まだシールがありません</p>;
+  const [cat, setCat] = useState("all");
+  const [series, setSeries] = useState("");
+  if (props.entries.length === 0) return <p className="text-sm text-sub">まだシールがありません</p>;
+
+  const cats = CATEGORIES.filter((c) => c.key === "all" || props.entries.some((e) => e.category === c.key));
+  const inCat = cat === "all" ? props.entries : props.entries.filter((e) => e.category === cat);
+  const seriesList = [...new Set(inCat.map((e) => e.series).filter(Boolean))];
+  const entries = series ? inCat.filter((e) => e.series === series) : inCat;
+
   return (
+    <>
+    <div className="mb-2 flex flex-wrap gap-1.5">
+      {cats.map((c) => (
+        <button
+          key={c.key}
+          type="button"
+          onClick={() => {
+            setCat(c.key);
+            setSeries("");
+          }}
+          className={`rounded-full px-3 py-1 text-xs ${cat === c.key ? "bg-ink text-surface" : "bg-muted text-sub"}`}
+        >
+          {c.label}
+        </button>
+      ))}
+    </div>
+    {cat !== "all" && seriesList.length > 1 && (
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {["", ...seriesList].map((s) => (
+          <button
+            key={s || "_all"}
+            type="button"
+            onClick={() => setSeries(s)}
+            className={`rounded-full border px-2.5 py-0.5 text-[11px] ${series === s ? "border-ink text-ink" : "border-line text-sub"}`}
+          >
+            {s || "すべて"}
+          </button>
+        ))}
+      </div>
+    )}
     <ul className="grid grid-cols-2 gap-3">
       {entries.map((e) => (
         <li
@@ -75,5 +122,6 @@ export function DexGrid(props: Props) {
         </li>
       ))}
     </ul>
+    </>
   );
 }

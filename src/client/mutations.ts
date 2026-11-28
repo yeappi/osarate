@@ -232,3 +232,27 @@ export async function signOut() {
   await sb().auth.signOut();
   clearCache();
 }
+
+// ---------------------------------------------------------------- つながり・安全
+
+export const markGiftsSeen = () => rpc("oshi_mark_gifts_seen", undefined, () => "");
+
+export const toggleBookLike = (bookId: string) =>
+  rpc<{ liked: boolean }>("oshi_toggle_book_like", { p_book_id: bookId }, (d) => (d.liked ? "いいねしました" : "いいねを取り消しました"));
+
+export const block: FormAction = (fd) => {
+  const unblock = s(fd, "mode") === "unblock";
+  return rpc(unblock ? "oshi_unblock" : "oshi_block", { p_target: s(fd, "target") }, () =>
+    unblock ? "ブロックを解除しました" : "ブロックしました。この相手からは贈り物が届かなくなります",
+  );
+};
+
+export const report: FormAction = (fd) =>
+  rpc(
+    "oshi_report",
+    { p_target: s(fd, "target"), p_transfer_id: n(fd, "transferId"), p_reason: s(fd, "reason") },
+    () => "通報しました。運営が確認します",
+  );
+
+export const adminResolveReport: FormAction = (fd) =>
+  rpc("oshi_admin_resolve_report", { p_id: n(fd, "id"), p_clear_message: b(fd, "clear") }, () => "対応済みにしました");

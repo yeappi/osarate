@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ActionForm } from "@/components/ActionForm";
 import { Loading } from "@/components/Loading";
-import { presentBook } from "@/client/mutations";
+import { presentBook, toggleBookLike } from "@/client/mutations";
+import { ShareButton } from "@/components/ShareButton";
 import { RecipientFields } from "@/features/gift/RecipientFields";
-import { useBook, useMe, useStorage } from "@/client/queries";
+import { useBook, useBookLikes, useMe, useStorage } from "@/client/queries";
 import { BookEditor } from "@/features/book-editor/BookEditor";
 
 export default function BookPage() {
@@ -15,6 +16,7 @@ export default function BookPage() {
   const me = useMe();
   const editable = !!book.data && me.data?.userId === book.data.book.owner_id;
   const storage = useStorage(editable ? me.data!.userId : null);
+  const likes = useBookLikes(id, me.data?.userId ?? null);
 
   if (book.data === undefined) return <Loading error={book.error} />;
   if (book.data === null) return <p className="text-sm">シール帳が見つかりません</p>;
@@ -28,6 +30,18 @@ export default function BookPage() {
       <h1 className="h2">
         {b.type.name} <span className="text-xs font-normal">No.{b.serial_no}</span>
       </h1>
+      <div className="mb-2 flex items-center gap-2">
+        <button
+          type="button"
+          className={`chip ${likes.data?.liked ? "text-accent-ink" : "text-sub"}`}
+          disabled={editable || !me.data?.userId}
+          onClick={() => void toggleBookLike(b.id)}
+          aria-label="いいね"
+        >
+          {likes.data?.liked ? "♥" : "♡"} <span className="num">{likes.data?.count ?? 0}</span>
+        </button>
+        <ShareButton path={`/stickers/books/${b.id}`} title={`${b.type.name}｜推されーと`} className="chip text-sub" />
+      </div>
       <BookEditor
         bookId={b.id}
         pageCount={b.type.page_count}

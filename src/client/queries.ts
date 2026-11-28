@@ -189,6 +189,7 @@ export type TransferRow = {
   reward: number;
   rate_pct: number | null;
   created_at: string;
+  seen_at: string | null;
   sticker: { type: { name: string } };
   from: { handle: string; display_name: string };
   to: { handle: string; display_name: string };
@@ -199,7 +200,7 @@ export const useTransfers = (userId: string | null) =>
     const r = await sb()
       .from("oshi_transfers")
       .select(
-        "id, kind, from_user, to_user, message, reward, rate_pct, created_at, sticker:oshi_stickers(type:oshi_sticker_types(name)), from:oshi_profiles!oshi_transfers_from_user_fkey(handle, display_name), to:oshi_profiles!oshi_transfers_to_user_fkey(handle, display_name)",
+        "id, kind, from_user, to_user, message, reward, rate_pct, created_at, seen_at, sticker:oshi_stickers(type:oshi_sticker_types(name)), from:oshi_profiles!oshi_transfers_from_user_fkey(handle, display_name), to:oshi_profiles!oshi_transfers_to_user_fkey(handle, display_name)",
       )
       .or(`from_user.eq.${userId},to_user.eq.${userId}`)
       .order("created_at", { ascending: false })
@@ -268,3 +269,55 @@ export type StarterOptions = {
 
 export const useStarterOptions = (enabled: boolean) =>
   useQuery(enabled ? "starter" : null, async () => must(await sb().rpc("oshi_starter_options")) as StarterOptions);
+
+// ---------------------------------------------------------------- つながり
+
+/** 未読のギフト・プレゼント数 */
+export const useUnreadGifts = (userId: string | null) =>
+  useQuery(userId ? `unread:${userId}` : null, async () => {
+    const r = await sb().from("oshi_transfers").select("id", { count: "exact", head: true }).eq("to_user", userId!).is("seen_at", null);
+    if (r.error) throw new Error(r.error.message);
+    return r.count ?? 0;
+  });
+
+/** フォロワーの一覧 */
+export const useFollowers = (userId: string | null) =>
+  useQuery(userId ? `followers:${userId}` : null, async () => {
+    const rows = must(await sb().from("oshi_follows").select("follower_id").eq("followee_id", userId!)) as { follower_id: string }[] | null;
+    const ids = (rows ?? []).map((r) => r.follower_id);
+    if (ids.length === 0) return [] as PublicProfile[];
+    return (must(await sb().from("oshi_profiles").select(PROFILE_COLUMNS).in("user_id", ids)) as PublicProfile[] | null) ?? [];
+  });
+
+/** 自分がブロックしている相手か */
+export const useIsBlocked = (viewerId: string | null, targetId: string | null) =>
+  useQuery(viewerId && targetId ? `block:${viewerId}:${targetId}` : null, async () => {
+    const r = await sb().from("oshi_blocks").select("blocked_id").eq("blocker_id", viewerId!).eq("blocked_id", targetId!).maybeSingle();
+    return !!must(r);
+  });
+
+/** シール帳のいいね数と、自分がいいね済みか */
+export const useBookLikes = (bookId: string | null, viewerId: string | null) =>
+  useQuery(bookId ? `likes:${bookId}:${viewerId}` : null, async () => {
+    const [count, mine] = await Promise.all([
+      sb().from("oshi_book_likes").select("user_id", { count: "exact", head: true }).eq("book_id", bookId!),
+      viewerId
+        ? sb().from("oshi_book_likes").select("user_id").eq("book_id", bookId!).eq("user_id", viewerId).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+    return { count: count.count ?? 0, liked: !!mine.data };
+  });
+
+/** 運営：未対応の通報 */
+export type ReportRow = {
+  id: number;
+  created_at: string;
+  reason: string;
+  transfer_id: number | null;
+  message: string | null;
+  reporter_handle: string;
+  target_handle: string;
+  target_id: string;
+};
+export const useReports = (enabled: boolean) =>
+  useQuery(enabled ? "admin:reports" : null, async () => must(await sb().rpc("oshi_admin_reports")) as ReportRow[]);

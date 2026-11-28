@@ -7,7 +7,8 @@ import { Loading } from "@/components/Loading";
 import { StickerView } from "@/components/StickerView";
 import { openSticker, sendGift } from "@/client/mutations";
 import { useBooks, useMe, useStickers } from "@/client/queries";
-import { RecipientFields } from "@/features/gift/RecipientFields";
+import { RecipientFields, useToParam } from "@/features/gift/RecipientFields";
+import { groupByType } from "@/domain/group";
 
 // バッグ：未開封シールとシール帳。未開封シールは開封するかギフトに使う
 export default function BagPage() {
@@ -15,6 +16,8 @@ export default function BagPage() {
   const uid = me.data?.userId ?? null;
   const sealed = useStickers(uid, "sealed");
   const books = useBooks(uid);
+  const toParam = useToParam();
+  const groups = groupByType(sealed.data ?? [], (x) => (x.gifted ? "g" : ""));
 
   return (
     <div>
@@ -25,12 +28,12 @@ export default function BagPage() {
         <p className="text-sm text-sub">未開封のシールはありません</p>
       ) : (
         <ul className="space-y-2">
-          {sealed.data.map((s) => (
+          {groups.map(({ first: s, count }) => (
             <li key={s.id} className="card space-y-2">
               <div className="flex items-center gap-3">
                 <StickerView name={s.type.name} imagePath={s.type.image_path} w={s.type.width} h={s.type.height} fixed={48} sealed />
                 <div className="flex-1 text-sm">
-                  {s.type.name} <span className="text-xs text-sub">No.{s.serial_no}</span>
+                  {s.type.name} {count > 1 && <span className="num text-xs text-sub">×{count}</span>}
                   <div className="text-xs text-sub">
                     魅力値 {s.type.charm}
                     {s.gifted && "・受け取ったギフト"}
@@ -41,9 +44,9 @@ export default function BagPage() {
                 </ActionForm>
               </div>
               {!s.gifted && (
-                <details>
+                <details open={!!toParam}>
                   <summary className="link cursor-pointer text-xs">ギフトする</summary>
-                  <ActionForm action={sendGift} submitLabel="ギフト" confirm="このシールをギフトしますか？">
+                  <ActionForm action={sendGift} submitLabel="ギフト" confirm="このシールを1枚ギフトしますか？">
                     <input type="hidden" name="stickerId" value={s.id} />
                     <RecipientFields withMessage />
                   </ActionForm>

@@ -7,11 +7,12 @@ import {
   adminCreateListing,
   adminCreateStickerType,
   adminGrant,
+  adminResolveReport,
   adminSetListingActive,
   adminSetStickerTypeActive,
 } from "@/client/mutations";
 import { useState } from "react";
-import { useAllTypes, useListings, useMe } from "@/client/queries";
+import { useAllTypes, useListings, useMe, useReports } from "@/client/queries";
 import { formatNum } from "@/domain/format";
 import { uploadStickerImage } from "@/server/services/admin";
 
@@ -23,6 +24,7 @@ export default function AdminPage() {
   const types = useAllTypes();
   const shopQ = useListings("shop");
   const prizeQ = useListings("prize");
+  const reports = useReports(!!me.data?.wallet?.is_admin);
   if (me.data?.wallet && !me.data.wallet.is_admin) return <p className="text-sm">権限がありません</p>;
   if (!types.data || !shopQ.data || !prizeQ.data) return <Loading error={types.error ?? shopQ.error ?? prizeQ.error} />;
   const { stickerTypes, bookTypes } = types.data;
@@ -33,6 +35,38 @@ export default function AdminPage() {
   return (
     <div className="space-y-6">
       <h1 className="h2">運営</h1>
+
+      <section>
+        <h2 className="h2">通報（未対応{reports.data && ` ${reports.data.length}件`}）</h2>
+        {!reports.data ? (
+          <Loading error={reports.error} />
+        ) : reports.data.length === 0 ? (
+          <p className="text-sm text-sub">未対応の通報はありません</p>
+        ) : (
+          <ul className="space-y-2">
+            {reports.data.map((r) => (
+              <li key={r.id} className="card space-y-1 text-sm">
+                <div className="text-xs text-sub">
+                  {new Date(r.created_at).toLocaleString("ja-JP")}・@{r.reporter_handle} → <a href={`/u/${r.target_handle}`} className="link">@{r.target_handle}</a>
+                </div>
+                {r.reason && <p>理由：{r.reason}</p>}
+                {r.message && <p className="rounded-lg bg-muted px-2 py-1">ギフトのメッセージ：「{r.message}」</p>}
+                <div className="flex gap-2">
+                  {r.transfer_id && r.message && (
+                    <ActionForm action={adminResolveReport} submitLabel="メッセージを消して対応済み" confirm="ギフトのメッセージを消します">
+                      <input type="hidden" name="id" value={r.id} />
+                      <input type="hidden" name="clear" value="1" />
+                    </ActionForm>
+                  )}
+                  <ActionForm action={adminResolveReport} submitLabel="対応済みにする">
+                    <input type="hidden" name="id" value={r.id} />
+                  </ActionForm>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section>
         <h2 className="h2">シール種別を作成</h2>

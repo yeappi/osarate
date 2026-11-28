@@ -8,7 +8,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { Icon } from "@/components/Icon";
 import { Loading } from "@/components/Loading";
 import { claimLoginBonus } from "@/client/mutations";
-import { useMe, useStarterOptions } from "@/client/queries";
+import { useMe, useStarterOptions, useUnreadGifts } from "@/client/queries";
 import { formatNum } from "@/domain/format";
 
 // ログイン必須の画面の枠。画面自体は静的に配信し、データはブラウザから取得する
@@ -16,6 +16,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const me = useMe();
   const starter = useStarterOptions(!!me.data?.profile);
+  const unread = useUnreadGifts(me.data?.profile ? me.data.userId : null);
 
   useEffect(() => {
     if (!me.data || !me.fresh) return;
@@ -45,6 +46,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <Icon name="admin" />
             </Link>
           )}
+          <Link href="/gifts" aria-label="ギフト" className="relative flex h-10 w-10 items-center justify-center rounded-tile border border-line bg-surface">
+            <Icon name="gift" />
+            {!!unread.data && (
+              <span className="num absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-accent px-1 text-center text-[11px] leading-5 text-surface">
+                {unread.data > 99 ? "99+" : unread.data}
+              </span>
+            )}
+          </Link>
           <Link href="/bag" aria-label="バッグ" className="flex h-10 w-10 items-center justify-center rounded-tile border border-line bg-surface">
             <Icon name="bag" />
           </Link>

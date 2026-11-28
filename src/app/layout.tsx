@@ -7,9 +7,16 @@ const body = Noto_Sans_JP({ subsets: ["latin"], weight: ["400", "500", "700"], v
 const round = Zen_Maru_Gothic({ subsets: ["latin"], weight: ["500", "700"], variable: "--font-round-face", preload: false });
 const num = Outfit({ subsets: ["latin"], weight: ["500", "700"], variable: "--font-num-face" });
 
+const SITE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "推されーと",
-  description: "シール帳アプリ",
+  description: "シールを集めて、貼って、贈り合うシール帳アプリ",
+  openGraph: { siteName: "推されーと", images: ["/og.png"], type: "website", locale: "ja_JP" },
+  twitter: { card: "summary_large_image", images: ["/og.png"] },
 };
 
 export const viewport: Viewport = {

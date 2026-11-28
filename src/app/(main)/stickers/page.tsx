@@ -8,7 +8,8 @@ import { StickerView } from "@/components/StickerView";
 import { DEXES } from "@/config/app";
 import { sendPresent } from "@/client/mutations";
 import { useBooks, useMe, useStorage } from "@/client/queries";
-import { RecipientFields } from "@/features/gift/RecipientFields";
+import { RecipientFields, useToParam } from "@/features/gift/RecipientFields";
+import { groupByType } from "@/domain/group";
 
 // シール：保管（開封済み・未使用）とシール帳の一覧
 export default function StickersPage() {
@@ -16,6 +17,8 @@ export default function StickersPage() {
   const uid = me.data?.userId ?? null;
   const storage = useStorage(uid);
   const books = useBooks(uid);
+  const toParam = useToParam();
+  const groups = groupByType(storage.data ?? []);
 
   return (
     <div>
@@ -46,15 +49,17 @@ export default function StickersPage() {
       ) : storage.data.length === 0 ? (
         <p className="text-sm text-sub">開封済みのシールはここに入ります</p>
       ) : (
+        <>
+        {toParam && <p className="mb-2 rounded-xl bg-gold-soft px-3 py-2 text-xs">{toParam} さんへのお礼：贈りたいシールを選んでください</p>}
         <ul className="space-y-2">
-          {storage.data.map((s) => (
+          {groups.map(({ first: s, count }) => (
             <li key={s.id} className="card flex items-center gap-3">
               <StickerView name={s.type.name} imagePath={s.type.image_path} w={s.type.width} h={s.type.height} fixed={48} />
               <div className="flex-1 text-sm">
-                {s.type.name} <span className="text-xs text-sub">No.{s.serial_no}</span>
-                <details className="mt-1">
+                {s.type.name} {count > 1 && <span className="num text-xs text-sub">×{count}</span>}
+                <details className="mt-1" open={!!toParam}>
                   <summary className="link cursor-pointer text-xs">プレゼントする</summary>
-                  <ActionForm action={sendPresent} submitLabel="プレゼント" confirm="このシールをプレゼントしますか？">
+                  <ActionForm action={sendPresent} submitLabel="プレゼント" confirm="このシールを1枚プレゼントしますか？">
                     <input type="hidden" name="stickerId" value={s.id} />
                     <RecipientFields />
                   </ActionForm>
@@ -63,6 +68,7 @@ export default function StickersPage() {
             </li>
           ))}
         </ul>
+        </>
       )}
     </div>
   );

@@ -7,6 +7,7 @@ import { DEXES } from "@/config/app";
 import { fetchDex, useBooks, useFollowStats, useMe, useSetting, useShowcase } from "@/client/queries";
 import { useQuery } from "@/client/store";
 import type { PublicProfile } from "@/domain/types";
+import { ProfileActions } from "./ProfileActions";
 import { ProfileCard } from "./ProfileCard";
 
 /** プロフィール画面の本体（自分・他人で共通） */
@@ -42,6 +43,7 @@ export function ProfileView({ profile }: { profile: PublicProfile }) {
       ) : (
         <Loading error={showcase.error ?? follow.error} />
       )}
+      <ProfileActions profile={profile} />
 
       <h2 className="h2">シール帳</h2>
       {!books.data ? (
