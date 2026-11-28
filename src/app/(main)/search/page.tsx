@@ -113,7 +113,8 @@ function Following({ userId }: { userId: string | null }) {
 function Ranking({ metric, period, me }: { metric: string; period: string; me: string | null }) {
   const rows = useRanking(metric, period, me);
   if (!rows.data) return <Loading error={rows.error} />;
-  const mine = rows.data.find((r) => r.user_id === me);
+  const data = rows.data;
+  const mine = data.find((r) => r.user_id === me);
   return (
     <div>
       <p className="mb-2 rounded-2xl bg-muted px-3 py-2 text-sm">
@@ -125,7 +126,7 @@ function Ranking({ metric, period, me }: { metric: string; period: string; me: s
         <>
         <div className="mb-3 grid grid-cols-3 items-end gap-2">
           {[1, 0, 2].map((i) => {
-            const r = rows.data[i];
+            const r = data[i];
             if (!r) return <div key={i} />;
             const h = i === 0 ? "h-28" : i === 1 ? "h-20" : "h-16";
             const medal = ["bg-gold", "bg-line", "bg-[#e2b48a]"][i];
