@@ -34,6 +34,7 @@ export function ProfileView({ profile }: { profile: PublicProfile }) {
         <ProfileCard
           profile={profile}
           isSelf={isSelf}
+          guest={!viewerId}
           follow={follow.data}
           favorites={showcase.data.favorites}
           favBooks={showcase.data.books}

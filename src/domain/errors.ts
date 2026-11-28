@@ -34,6 +34,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   invalid_starter: "選べないアイテムです",
   starter_already_chosen: "初期アイテムは選択済みです",
   blocked: "この相手には贈れません",
+  invalid_avatar: "アイコンは「画像を選ぶ」から設定してください",
   cannot_block_self: "自分はブロックできません",
   cannot_report_self: "自分は通報できません",
   too_many_reports: "通報の回数が多すぎます。時間をおいてください",

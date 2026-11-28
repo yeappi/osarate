@@ -47,7 +47,11 @@ export default function UserDexPage() {
           </h1>
           <DexProgress owned={entries.data.filter((e) => e.owned).length} total={entries.data.length} />
           <div className="h-3" />
-          <DexGrid entries={entries.data} mode="gift" giftToHandle={p.handle} />
+          {me.data?.userId ? (
+            <DexGrid entries={entries.data} mode="gift" giftToHandle={p.handle} />
+          ) : (
+            <DexGrid entries={entries.data} mode="view" />
+          )}
         </>
       )}
     </div>

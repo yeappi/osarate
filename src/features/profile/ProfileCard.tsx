@@ -11,6 +11,8 @@ import type { CanvasItem, PublicProfile } from "@/domain/types";
 type Props = {
   profile: PublicProfile;
   isSelf: boolean;
+  /** ログインしていない閲覧者 */
+  guest?: boolean;
   follow: { following: number; followers: number; isFollowing: boolean };
   favorites: { sticker_id: string; name: string; image_path: string | null; width: number; height: number }[];
   favBooks: { id: string; name: string; page_count: number }[];
@@ -25,7 +27,7 @@ const FIXED = 88; // TOP3・お気に入りシール帳の表示サイズ（固�
  * プロフィールの名刺部分（最初の1画面）。
  * 将来のプロフィール着せ替えは、この section に data-theme を付けて切り替える。
  */
-export function ProfileCard({ profile, isSelf, follow, favorites, favBooks, background, bgCanvas }: Props) {
+export function ProfileCard({ profile, isSelf, guest, follow, favorites, favBooks, background, bgCanvas }: Props) {
   const scale = CARD_W / bgCanvas.w;
   return (
     <section
@@ -112,6 +114,8 @@ export function ProfileCard({ profile, isSelf, follow, favorites, favBooks, back
         <div className="mt-2 flex flex-wrap justify-center gap-2">
           {isSelf ? (
             <Link href="/me/edit" className="btn">プロフィール・展示を編集</Link>
+          ) : guest ? (
+            <Link href="/signup" className="btn-primary">はじめて、フォローやギフトをする</Link>
           ) : (
             <>
               <ActionForm action={followAction} submitLabel={follow.isFollowing ? "フォロー中" : "フォロー"} className="flex">

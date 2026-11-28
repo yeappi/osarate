@@ -7,6 +7,7 @@ import { Loading } from "@/components/Loading";
 import { StickerView } from "@/components/StickerView";
 import { setFavBooks, setFavorites, signOut, updateProfile } from "@/client/mutations";
 import { useBooks, useMe, useSetting, useShowcase, useStickers } from "@/client/queries";
+import { AvatarPicker } from "@/features/profile/AvatarPicker";
 import { BgEditor } from "@/features/profile/BgEditor";
 
 export default function EditProfilePage() {
@@ -43,10 +44,10 @@ export default function EditProfilePage() {
             自己紹介
             <textarea name="bio" defaultValue={p.bio} maxLength={200} className="input w-full" rows={3} />
           </label>
-          <label className="text-sm">
-            アイコン画像URL（仮。アップロードはデザイン工程で）
-            <input name="avatar_url" defaultValue={p.avatar_url ?? ""} className="input w-full" />
-          </label>
+          <div className="text-sm">
+            アイコン
+            <AvatarPicker userId={p.user_id} initial={p.avatar_url} initialLetter={p.display_name.slice(0, 1)} />
+          </div>
         </ActionForm>
       </section>
 

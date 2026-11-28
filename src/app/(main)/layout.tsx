@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { ActionForm } from "@/components/ActionForm";
 import { BottomNav } from "@/components/BottomNav";
@@ -12,18 +12,41 @@ import { useMe, useStarterOptions, useUnreadGifts } from "@/client/queries";
 import { formatNum } from "@/domain/format";
 
 // ログイン必須の画面の枠。画面自体は静的に配信し、データはブラウザから取得する
+// ログインしていなくても見られる画面（シェアされたプロフィール・図鑑・シール帳）
+const PUBLIC_PATH = /^\/(u\/[^/]+(\/dex\/[^/]+)?|stickers\/books\/[^/]+)\/?$/;
+
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isPublic = PUBLIC_PATH.test(pathname);
   const me = useMe();
   const starter = useStarterOptions(!!me.data?.profile);
   const unread = useUnreadGifts(me.data?.profile ? me.data.userId : null);
 
   useEffect(() => {
     if (!me.data || !me.fresh) return;
-    if (!me.data.userId) router.replace("/login");
+    if (!me.data.userId) {
+      if (!isPublic) router.replace("/login");
+    }
     else if (!me.data.profile) router.replace("/welcome");
     else if (starter.data && starter.fresh && !starter.data.chosen) router.replace("/starter");
-  }, [me.data, me.fresh, starter.data, starter.fresh, router]);
+  }, [me.data, me.fresh, starter.data, starter.fresh, router, isPublic]);
+
+  // ログインしていない人が、公開の画面を開いたとき：見るだけの枠
+  if (me.data && !me.data.userId && isPublic) {
+    return (
+      <div className="mx-auto min-h-screen max-w-md pb-12">
+        <header className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-bg/90 px-4 pb-2 pt-3 backdrop-blur">
+          <span className="font-round text-lg font-bold">推されーと</span>
+          <div className="flex gap-2">
+            <Link href="/login" className="btn">ログイン</Link>
+            <Link href="/signup" className="btn-accent">はじめる</Link>
+          </div>
+        </header>
+        <main className="px-4 pb-4 pt-1">{children}</main>
+      </div>
+    );
+  }
 
   if (!me.data?.profile || !me.data.wallet) return <Loading error={me.error} />;
   const w = me.data.wallet;
