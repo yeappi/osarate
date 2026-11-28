@@ -16,7 +16,12 @@ export async function generateMetadata({ params }: { params: Promise<{ handle: s
     if (!p) return {};
     const title = `${p.display_name}（@${p.handle}）のシール帳｜推されーと`;
     const description = p.bio?.slice(0, 100) || "シールを集めて、貼って、贈り合うシール帳アプリ";
-    return { title, description, openGraph: { title, description }, twitter: { title, description } };
+    return {
+      title,
+      description,
+      openGraph: { title, description, siteName: "推されーと", images: ["/og.png"], type: "profile", locale: "ja_JP" },
+      twitter: { card: "summary_large_image", title, description, images: ["/og.png"] },
+    };
   } catch {
     return {};
   }
