@@ -10,6 +10,7 @@ import {
   adminSetListingActive,
   adminSetStickerTypeActive,
 } from "@/client/mutations";
+import { useState } from "react";
 import { useAllTypes, useListings, useMe } from "@/client/queries";
 import { formatNum } from "@/domain/format";
 import { uploadStickerImage } from "@/server/services/admin";
@@ -125,19 +126,44 @@ export default function AdminPage() {
 
       <section>
         <h2 className="h2">付与</h2>
-        <ActionForm action={adminGrant} submitLabel="付与" className={col}>
-          <input name="to" required placeholder="@ユーザーID" className="input" />
-          <div className="flex gap-1">
-            <select name="kind" className="input">
-              <option value="sticker">シール</option><option value="book">シール帳</option><option value="points">ポイント</option>
-            </select>
-            <input name="typeId" type="number" placeholder="種別ID" className="input w-24" />
-            <input name="qty" type="number" min={1} max={100} defaultValue={1} className="input w-16" />
-            <input name="points" type="number" min={1} placeholder="pt" className="input w-24" />
-          </div>
-          <select name="state" className="input"><option value="sealed">未開封で付与</option><option value="opened">開封済みで付与</option></select>
-        </ActionForm>
+        <GrantForm myHandle={me.data?.profile?.handle ?? null} className={col} />
       </section>
     </div>
+  );
+}
+
+type GrantKind = "points" | "sticker" | "book";
+
+// 付与フォーム。種類に合わせて必要な欄だけ出す
+function GrantForm({ myHandle, className }: { myHandle: string | null; className: string }) {
+  const [to, setTo] = useState("");
+  const [kind, setKind] = useState<GrantKind>("points");
+  return (
+    <ActionForm action={adminGrant} submitLabel="付与" className={className}>
+      <div className="flex gap-1">
+        <input name="to" required placeholder="@ユーザーID" className="input flex-1" value={to} onChange={(e) => setTo(e.target.value)} />
+        {myHandle && (
+          <button type="button" className="btn" onClick={() => setTo(`@${myHandle}`)}>
+            自分に
+          </button>
+        )}
+      </div>
+      <select name="kind" className="input" value={kind} onChange={(e) => setKind(e.target.value as GrantKind)}>
+        <option value="points">ポイント</option><option value="sticker">シール</option><option value="book">シール帳</option>
+      </select>
+      {kind === "points" ? (
+        <input name="points" type="number" min={1} required placeholder="付与するpt" className="input" />
+      ) : (
+        <>
+          <div className="flex gap-1">
+            <input name="typeId" type="number" required placeholder="種別ID" className="input flex-1" />
+            <input name="qty" type="number" min={1} max={100} defaultValue={1} className="input w-20" aria-label="個数" />
+          </div>
+          {kind === "sticker" && (
+            <select name="state" className="input"><option value="sealed">未開封で付与</option><option value="opened">開封済みで付与</option></select>
+          )}
+        </>
+      )}
+    </ActionForm>
   );
 }
