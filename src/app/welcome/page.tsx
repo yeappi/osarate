@@ -28,7 +28,7 @@ export default function WelcomePage() {
         action={createProfile}
         submitLabel="はじめる"
         className="flex flex-col gap-2"
-        onDone={(r) => r?.ok && router.replace("/me")}
+        onDone={(r) => r?.ok && router.replace("/starter")}
       >
         <label className="text-sm">
           ユーザーID（英数字と _、3〜20文字）

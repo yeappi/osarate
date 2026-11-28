@@ -8,19 +8,21 @@ import { BottomNav } from "@/components/BottomNav";
 import { Icon } from "@/components/Icon";
 import { Loading } from "@/components/Loading";
 import { claimLoginBonus } from "@/client/mutations";
-import { useMe } from "@/client/queries";
+import { useMe, useStarterOptions } from "@/client/queries";
 import { formatNum } from "@/domain/format";
 
 // ログイン必須の画面の枠。画面自体は静的に配信し、データはブラウザから取得する
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const me = useMe();
+  const starter = useStarterOptions(!!me.data?.profile);
 
   useEffect(() => {
     if (!me.data || !me.fresh) return;
     if (!me.data.userId) router.replace("/login");
     else if (!me.data.profile) router.replace("/welcome");
-  }, [me.data, me.fresh, router]);
+    else if (starter.data && starter.fresh && !starter.data.chosen) router.replace("/starter");
+  }, [me.data, me.fresh, starter.data, starter.fresh, router]);
 
   if (!me.data?.profile || !me.data.wallet) return <Loading error={me.error} />;
   const w = me.data.wallet;

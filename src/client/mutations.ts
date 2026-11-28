@@ -68,7 +68,23 @@ export const follow: FormAction = (fd) => {
   );
 };
 
+export const claimQuest: FormAction = (fd) =>
+  rpc<{ points: number }>("oshi_claim_quest", { p_request_id: req(fd), p_code: s(fd, "code") }, (d) => `${d.points}pt 受け取りました`);
+
+export const chooseStarter: FormAction = (fd) =>
+  rpc(
+    "oshi_choose_starter",
+    { p_request_id: req(fd), p_sticker_type: n(fd, "stickerType"), p_book_type: n(fd, "bookType") },
+    () => "受け取りました",
+  );
+
 // ---------------------------------------------------------------- 所持品・ギフト
+
+export const presentBook: FormAction = async (fd) => {
+  const to = await userIdOf(s(fd, "to"));
+  if (!to) return NO_USER;
+  return rpc("oshi_present_book", { p_request_id: req(fd), p_book_id: s(fd, "bookId"), p_to: to }, () => "シール帳をプレゼントしました");
+};
 
 export const openSticker: FormAction = (fd) =>
   rpc("oshi_open_sticker", { p_sticker_id: s(fd, "stickerId") }, () => "開封しました。保管に入りました");

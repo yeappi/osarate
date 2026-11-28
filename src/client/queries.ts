@@ -252,3 +252,19 @@ export const useAllTypes = () =>
     type BT = { id: number; name: string; page_count: number; charm: number };
     return { stickerTypes: (must(st) as ST[] | null) ?? [], bookTypes: (must(bt) as BT[] | null) ?? [] };
   });
+
+// ---------------------------------------------------------------- はじめて
+
+export type Quest = { code: string; title: string; points: number; done: boolean; claimed: boolean };
+
+export const useQuests = (enabled: boolean) =>
+  useQuery(enabled ? "quests" : null, async () => must(await sb().rpc("oshi_quest_list")) as Quest[]);
+
+export type StarterOptions = {
+  chosen: boolean;
+  stickers: { id: number; name: string; image_path: string | null; width: number; height: number }[];
+  books: { id: number; name: string; theme: string; page_count: number }[];
+};
+
+export const useStarterOptions = (enabled: boolean) =>
+  useQuery(enabled ? "starter" : null, async () => must(await sb().rpc("oshi_starter_options")) as StarterOptions);

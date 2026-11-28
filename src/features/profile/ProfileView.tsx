@@ -52,7 +52,7 @@ export function ProfileView({ profile }: { profile: PublicProfile }) {
         <ul className="grid grid-cols-3 gap-2">
           {books.data.map((b, i) => (
             <li key={b.id}>
-              <BookTile id={b.id} name={b.type.name} sub={`No.${b.serial_no}・${b.type.page_count}P`} index={i} />
+              <BookTile id={b.id} name={b.type.name} sub={`No.${b.serial_no}・${b.type.page_count}P`} index={i} theme={b.type.theme} />
             </li>
           ))}
         </ul>

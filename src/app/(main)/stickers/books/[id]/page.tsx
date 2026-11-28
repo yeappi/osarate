@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { ActionForm } from "@/components/ActionForm";
 import { Loading } from "@/components/Loading";
+import { presentBook } from "@/client/mutations";
+import { RecipientFields } from "@/features/gift/RecipientFields";
 import { useBook, useMe, useStorage } from "@/client/queries";
 import { BookEditor } from "@/features/book-editor/BookEditor";
 
@@ -39,6 +42,16 @@ export default function BookPage() {
           h: s.type.height,
         }))}
       />
+      {editable && (
+        <details className="mt-6 text-sm">
+          <summary className="link cursor-pointer text-xs">このシール帳をプレゼントする</summary>
+          <p className="my-2 text-xs text-sub">貼ってあるシールは先に剥がしてください。プレゼントすると手元からなくなります。</p>
+          <ActionForm action={presentBook} submitLabel="プレゼント" confirm="このシール帳をプレゼントしますか？">
+            <input type="hidden" name="bookId" value={b.id} />
+            <RecipientFields />
+          </ActionForm>
+        </details>
+      )}
     </div>
   );
 }

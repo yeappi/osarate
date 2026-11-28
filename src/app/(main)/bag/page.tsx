@@ -61,7 +61,7 @@ export default function BagPage() {
         <ul className="grid grid-cols-3 gap-2">
           {books.data.map((b, i) => (
             <li key={b.id}>
-              <BookTile id={b.id} name={b.type.name} sub={`No.${b.serial_no}`} index={i} />
+              <BookTile id={b.id} name={b.type.name} sub={`No.${b.serial_no}`} index={i} theme={b.type.theme} />
             </li>
           ))}
         </ul>
