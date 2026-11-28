@@ -1,28 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { ActionForm } from "@/components/ActionForm";
 import { ShareButton } from "@/components/ShareButton";
 import { block, report } from "@/client/mutations";
 import { useFollowers, useIsBlocked, useMe } from "@/client/queries";
+import { ActionForm } from "@/components/ActionForm";
 import type { PublicProfile } from "@/domain/types";
 
-/** プロフィールの下の操作：シェア・フォロワー一覧・（他人なら）ブロックと通報 */
+/** プロフィールの下の操作：フォロワー一覧・シェア */
 export function ProfileActions({ profile }: { profile: PublicProfile }) {
-  const me = useMe();
-  const viewerId = me.data?.userId ?? null;
-  const isSelf = viewerId === profile.user_id;
   const followers = useFollowers(profile.user_id);
-  const blocked = useIsBlocked(isSelf ? null : viewerId, profile.user_id);
 
   return (
-    <div className="mt-3 space-y-2">
-      <div className="flex justify-center">
-        <ShareButton path={`/u/${profile.handle}`} title={`${profile.display_name}（@${profile.handle}）のシール帳｜推されーと`} />
-      </div>
-
-      <details className="text-sm">
-        <summary className="link cursor-pointer text-xs">フォロワー一覧{followers.data && `（${followers.data.length}）`}</summary>
+    <div className="mt-3 flex items-start justify-between gap-2">
+      <details className="flex-1 text-sm">
+        <summary className="cursor-pointer text-xs text-sub">フォロワー一覧{followers.data && `（${followers.data.length}）`}</summary>
         {followers.data && followers.data.length === 0 && <p className="mt-1 text-xs text-sub">まだいません</p>}
         <ul className="mt-1 space-y-1">
           {(followers.data ?? []).map((p) => (
@@ -35,7 +27,19 @@ export function ProfileActions({ profile }: { profile: PublicProfile }) {
           ))}
         </ul>
       </details>
+      <ShareButton path={`/u/${profile.handle}`} title={`${profile.display_name}（@${profile.handle}）のシール帳｜推されーと`} className="btn !min-h-8 shrink-0 text-xs" />
+    </div>
+  );
+}
 
+/** 他人のプロフィールの一番下：ブロックと通報 */
+export function SafetyActions({ profile }: { profile: PublicProfile }) {
+  const me = useMe();
+  const viewerId = me.data?.userId ?? null;
+  const isSelf = viewerId === profile.user_id;
+  const blocked = useIsBlocked(isSelf ? null : viewerId, profile.user_id);
+  return (
+    <div className="mt-8">
       {!isSelf && viewerId && (
         <details className="text-sm">
           <summary className="cursor-pointer text-xs text-sub">ブロック・通報</summary>

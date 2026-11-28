@@ -10,6 +10,8 @@ type Props = {
   items: CanvasItem[];
   displayWidth?: number;
   selectedId?: string | null;
+  /** 貼った直後のシール（ぺたっと出す） */
+  popId?: string | null;
   /** 何もない所をタップ（論理座標） */
   onCanvasTap?: (x: number, y: number) => void;
   onItemTap?: (stickerId: string) => void;
@@ -17,7 +19,7 @@ type Props = {
 };
 
 /** シール帳のページ・プロフィール背景で共通のキャンバス表示。後に貼ったものが上 */
-export function CanvasBoard({ canvas, items, displayWidth = 320, selectedId, onCanvasTap, onItemTap, className }: Props) {
+export function CanvasBoard({ canvas, items, displayWidth = 320, selectedId, popId, onCanvasTap, onItemTap, className }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const scale = displayWidth / canvas.w;
   const rendered = { w: displayWidth, h: canvas.h * scale };
@@ -41,7 +43,7 @@ export function CanvasBoard({ canvas, items, displayWidth = 320, selectedId, onC
         <button
           type="button"
           key={it.sticker_id}
-          className={`absolute rounded-xl ${selectedId === it.sticker_id ? "outline-2 outline-offset-4 outline-dashed outline-accent" : ""}`}
+          className={`absolute rounded-xl ${selectedId === it.sticker_id ? "outline-2 outline-offset-4 outline-dashed outline-accent" : ""} ${popId === it.sticker_id ? "animate-pop" : ""}`}
           style={{ left: it.x * scale, top: it.y * scale }}
           onClick={(e) => {
             if (!onItemTap) return;

@@ -1,18 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { AvatarImage } from "@/features/profile/AvatarImage";
 import { Loading } from "@/components/Loading";
 import { RANKING_METRICS, RANKING_PERIODS } from "@/config/app";
 import { useFollowing, useMe, useRanking, useSearch } from "@/client/queries";
 import { formatNum } from "@/domain/format";
 import type { PublicProfile } from "@/domain/types";
 
-function UserRow({ p, right }: { p: Pick<PublicProfile, "handle" | "display_name">; right?: React.ReactNode }) {
+function UserRow({ p, right, highlight }: { p: Pick<PublicProfile, "handle" | "display_name" | "avatar_url">; right?: React.ReactNode; highlight?: boolean }) {
   return (
     <li>
-      <Link href={`/u/${p.handle}`} className="card flex items-center justify-between text-sm">
-        <span>
+      <Link href={`/u/${p.handle}`} className={`card flex items-center gap-3 text-sm ${highlight ? "border-accent bg-accent-soft" : ""}`}>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent-soft font-round font-bold text-accent-ink">
+          <AvatarImage url={p.avatar_url} letter={p.display_name.slice(0, 1)} />
+        </span>
+        <span className="min-w-0 flex-1 truncate">
           {p.display_name} <span className="text-xs text-sub">@{p.handle}</span>
         </span>
         {right}
@@ -28,8 +32,18 @@ export default function SearchPage() {
   const [input, setInput] = useState("");
   const [q, setQ] = useState("");
   const [metric, setMetric] = useState<string>("charm");
-  const [period, setPeriod] = useState<string>("day");
+  const [period, setPeriod] = useState<string>("week");
   const userId = me.data?.userId ?? null;
+
+  // 入力中に検索する（少し待ってから）
+  useEffect(() => {
+    const v = input.trim();
+    const t = setTimeout(() => {
+      setQ(v);
+      if (v) setTab("search");
+    }, 350);
+    return () => clearTimeout(t);
+  }, [input]);
 
   return (
     <div>
@@ -41,7 +55,7 @@ export default function SearchPage() {
           setTab("search");
         }}
       >
-        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="ユーザーを検索" className="input flex-1" />
+        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="ユーザーIDか名前で検索" type="search" className="input flex-1" />
         <button className="btn">検索</button>
       </form>
       <nav className="mb-3 flex gap-2">
@@ -102,13 +116,15 @@ function Ranking({ metric, period, me }: { metric: string; period: string; me: s
   const mine = rows.data.find((r) => r.user_id === me);
   return (
     <div>
-      <p className="mb-2 text-sm">あなた：{mine ? `${mine.rnk}位（${formatNum(mine.value)}）` : "圏外"}</p>
+      <p className="mb-2 rounded-2xl bg-muted px-3 py-2 text-sm">
+        あなた：{mine ? <b className="num">{mine.rnk}位（{formatNum(mine.value)}）</b> : "まだランク外。シールを集めたり贈ったりすると載ります"}
+      </p>
       {rows.data.length === 0 ? (
-        <p className="text-sm text-sub">まだランキングがありません</p>
+        <p className="text-sm text-sub">この期間のランキングはまだありません。期間を「累計」にすると見られるかもしれません</p>
       ) : (
         <ol className="space-y-2">
           {rows.data.map((r) => (
-            <UserRow key={r.user_id} p={r} right={<span className="flex items-baseline gap-2"><span className="num text-sm text-accent-ink">{r.rnk}位</span><span className="num">{formatNum(r.value)}</span></span>} />
+            <UserRow key={r.user_id} p={r} highlight={r.user_id === me} right={<span className="flex items-baseline gap-2"><span className="num text-sm text-accent-ink">{r.rnk}位</span><span className="num">{formatNum(r.value)}</span></span>} />
           ))}
         </ol>
       )}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { refresh } from "@/client/store";
 import { ActionForm } from "@/components/ActionForm";
 import { BottomNav } from "@/components/BottomNav";
 import { Icon } from "@/components/Icon";
@@ -21,7 +22,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const isPublic = PUBLIC_PATH.test(pathname);
   const me = useMe();
   const starter = useStarterOptions(!!me.data?.profile);
-  const unread = useUnreadGifts(me.data?.profile ? me.data.userId : null);
+  const unreadUid = me.data?.profile ? me.data.userId : null;
+  const unread = useUnreadGifts(unreadUid);
+
+  // 届いたギフトに気づけるよう、未読数は1分ごとに確かめる
+  useEffect(() => {
+    if (!unreadUid) return;
+    const t = setInterval(() => refresh(`unread:${unreadUid}`), 60_000);
+    return () => clearInterval(t);
+  }, [unreadUid]);
 
   useEffect(() => {
     if (!me.data || !me.fresh) return;
@@ -54,41 +63,49 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="mx-auto min-h-screen max-w-md pb-24">
       <header className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-bg/90 px-4 pb-2 pt-3 backdrop-blur">
-        <span className="chip pl-1.5">
+        <Link href="/me" className="chip pl-1.5" aria-label="ポイント">
           <span className="num flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[11px] text-surface">P</span>
           <span className="num text-[15px]">{formatNum(w.points)}</span>
-          <span className="text-[11px] text-sub">pt</span>
-        </span>
-        <div className="flex items-center gap-2">
-          <span className="chip text-sub" title="持ち玉">
-            <Icon name="ball" size={14} strokeWidth={2} />
-            <span className="font-num text-[13px] font-medium">{formatNum(w.balls)}</span>
-          </span>
-          {w.is_admin && (
-            <Link href="/admin" aria-label="運営" className="flex h-10 w-10 items-center justify-center rounded-tile border border-line bg-surface text-sub">
-              <Icon name="admin" />
+          <span className="text-[11px] text-sub">ポイント</span>
+        </Link>
+        <div className="flex items-center gap-1.5">
+          {w.balls > 0 && (
+            <Link href="/play" className="chip px-2 text-sub" aria-label="持ち玉">
+              <Icon name="ball" size={14} strokeWidth={2} />
+              <span className="font-num text-[13px] font-medium">{formatNum(w.balls)}</span>
             </Link>
           )}
-          <Link href="/gifts" aria-label="ギフト" className="relative flex h-10 w-10 items-center justify-center rounded-tile border border-line bg-surface">
-            <Icon name="gift" />
-            {!!unread.data && (
-              <span className="num absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-accent px-1 text-center text-[11px] leading-5 text-surface">
-                {unread.data > 99 ? "99+" : unread.data}
-              </span>
-            )}
-          </Link>
-          <Link href="/bag" aria-label="バッグ" className="flex h-10 w-10 items-center justify-center rounded-tile border border-line bg-surface">
-            <Icon name="bag" />
-          </Link>
+          {w.is_admin && (
+            <HeaderIcon href="/admin" label="運営" icon="admin" />
+          )}
+          <HeaderIcon href="/gifts" label="ギフト" icon="gift" badge={unread.data ?? 0} />
+          <HeaderIcon href="/bag" label="バッグ" icon="bag" />
         </div>
       </header>
       {w.login_bonus_available && (
-        <div className="mx-4 mb-1 rounded-2xl bg-gold-soft px-3 py-2">
-          <ActionForm action={claimLoginBonus} submitLabel="ログインボーナスを受け取る" />
+        <div className="mx-4 mb-2 flex items-center justify-between gap-2 rounded-2xl bg-gold-soft px-3 py-2">
+          <span className="text-xs font-bold">今日のログインボーナス</span>
+          <ActionForm action={claimLoginBonus} submitLabel="受け取る" variant="primary" />
         </div>
       )}
       <main className="px-4 pb-4 pt-1">{children}</main>
       <BottomNav />
     </div>
+  );
+}
+
+function HeaderIcon({ href, label, icon, badge = 0 }: { href: string; label: string; icon: string; badge?: number }) {
+  return (
+    <Link href={href} aria-label={label} className="relative flex w-11 flex-col items-center gap-0.5 text-[9px] text-sub">
+      <span className="flex h-8 w-8 items-center justify-center rounded-tile border border-line bg-surface text-ink">
+        <Icon name={icon} size={18} />
+      </span>
+      {label}
+      {badge > 0 && (
+        <span className="num absolute -right-0.5 -top-1 min-w-5 rounded-full bg-accent px-1 text-center text-[11px] leading-5 text-surface">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
+    </Link>
   );
 }

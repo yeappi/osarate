@@ -28,7 +28,7 @@ export default function BookPage() {
         <Link href={editable ? "/stickers" : "/search"} className="link">← 戻る</Link>
       </p>
       <h1 className="h2">
-        {b.type.name} <span className="text-xs font-normal">No.{b.serial_no}</span>
+        {b.type.name}
       </h1>
       <div className="mb-2 flex items-center gap-2">
         <button
@@ -60,7 +60,7 @@ export default function BookPage() {
         <details className="mt-6 text-sm">
           <summary className="link cursor-pointer text-xs">このシール帳をプレゼントする</summary>
           <p className="my-2 text-xs text-sub">貼ってあるシールは先に剥がしてください。プレゼントすると手元からなくなります。</p>
-          <ActionForm action={presentBook} submitLabel="プレゼント" confirm="このシール帳をプレゼントしますか？">
+          <ActionForm action={presentBook} submitLabel="プレゼント" variant="accent" confirm="このシール帳をプレゼントしますか？手元からなくなります。" className="flex flex-col gap-1">
             <input type="hidden" name="bookId" value={b.id} />
             <RecipientFields />
           </ActionForm>

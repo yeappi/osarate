@@ -1,64 +1,82 @@
 "use client";
 
+import Link from "next/link";
 import { ActionForm } from "@/components/ActionForm";
-import { StickerView } from "@/components/StickerView";
-import { formatPt } from "@/domain/format";
+import { Icon } from "@/components/Icon";
 import { Loading } from "@/components/Loading";
+import { StickerView } from "@/components/StickerView";
 import { buyListing } from "@/client/mutations";
 import { useListings } from "@/client/queries";
+import { formatPt } from "@/domain/format";
+import { RecipientFields } from "@/features/gift/RecipientFields";
 
-// SHOP：限定品のみ。基本のシールは図鑑から購入する
+// SHOP：期間・数量限定の品と、遊び場への入口。普段のシールは図鑑から買う
 export default function ShopPage() {
   const q = useListings("shop");
-  if (!q.data) return <Loading error={q.error} />;
-  const listings = q.data;
+
   return (
-    <div>
-      <h1 className="h2">SHOP（限定品）</h1>
-      {listings.length === 0 && <p className="text-sm text-sub">販売中の商品はありません</p>}
-      <ul className="space-y-3">
-        {listings.map((l) => {
-          const st = l.sticker_type;
-          const bt = l.book_type;
-          const left = l.stock == null ? null : l.stock - l.sold_count;
-          return (
-            <li key={l.id} className="card space-y-2">
-              <div className="flex gap-3">
-                {st ? (
-                  <StickerView name={st.name} imagePath={st.image_path} w={st.width} h={st.height} fixed={72} />
-                ) : (
-                  <div className="flex h-[72px] w-[72px] items-center justify-center border bg-accent-soft text-xs">シール帳</div>
-                )}
-                <div className="text-sm">
-                  <div className="font-bold">{st?.name ?? bt?.name}</div>
-                  <div>{formatPt(l.price)}</div>
-                  <div className="text-xs text-sub">
-                    {left != null && `残り ${left}`}
-                    {l.ends_at && `　〜${new Date(l.ends_at).toLocaleString("ja-JP")}`}
-                    {l.per_user_limit && `　1人${l.per_user_limit}個まで`}
-                    {bt && `　${bt.page_count}ページ`}
+    <div className="space-y-4">
+      <h1 className="h2 mt-1">SHOP</h1>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Link href="/dex/main" className="card flex flex-col gap-1">
+          <Icon name="dex" />
+          <b className="text-sm">図鑑で買う</b>
+          <span className="text-[11px] text-sub">いつでも買える、すべてのシール</span>
+        </Link>
+        <Link href="/play" className="card flex flex-col gap-1">
+          <Icon name="play" />
+          <b className="text-sm">遊び場</b>
+          <span className="text-[11px] text-sub">パチ屋で玉を増やして景品と交換</span>
+        </Link>
+      </div>
+
+      <h2 className="font-round text-base font-bold">限定品</h2>
+      {!q.data ? (
+        <Loading error={q.error} />
+      ) : q.data.length === 0 ? (
+        <p className="card text-center text-sm text-sub">いま販売中の限定品はありません。次の入荷をお楽しみに</p>
+      ) : (
+        <ul className="space-y-3">
+          {q.data.map((l) => {
+            const st = l.sticker_type;
+            const bt = l.book_type;
+            const left = l.stock == null ? null : l.stock - l.sold_count;
+            return (
+              <li key={l.id} className="card space-y-3">
+                <div className="flex gap-3">
+                  {st ? (
+                    <StickerView name={st.name} imagePath={st.image_path} w={st.width} h={st.height} fixed={72} />
+                  ) : (
+                    <div className="flex h-[72px] w-[60px] flex-col justify-end rounded-[8px_14px_14px_8px] bg-accent-soft p-1.5 text-[10px] font-bold">{bt?.name}</div>
+                  )}
+                  <div className="flex-1 text-sm">
+                    <div className="font-bold">{st?.name ?? bt?.name}</div>
+                    <div className="num">{formatPt(l.price)}</div>
+                    <div className="text-xs text-sub">
+                      {[left != null && `残り ${left}`, l.ends_at && `〜${new Date(l.ends_at).toLocaleDateString("ja-JP")}`, l.per_user_limit && `1人${l.per_user_limit}個まで`, bt && `${bt.page_count}ページ`]
+                        .filter(Boolean)
+                        .join("・")}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <ActionForm action={buyListing} submitLabel="自分用に買う">
-                <input type="hidden" name="listingId" value={l.id} />
-                {st && (
-                  <label className="text-xs">
-                    <input type="checkbox" name="open" /> すぐ開封
-                  </label>
-                )}
-              </ActionForm>
-              {st && (
-                <ActionForm action={buyListing} submitLabel="ギフトする" confirm={`${formatPt(l.price)}でギフトしますか？`}>
+                <ActionForm action={buyListing} submitLabel="買う" variant="primary" className="flex">
                   <input type="hidden" name="listingId" value={l.id} />
-                  <input name="giftTo" required placeholder="贈り先 @ユーザーID" className="input w-40" />
-                  <input name="message" maxLength={100} placeholder="メッセージ（任意）" className="input flex-1" />
                 </ActionForm>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+                {st && (
+                  <details>
+                    <summary className="cursor-pointer text-xs text-sub">だれかに贈る</summary>
+                    <ActionForm action={buyListing} submitLabel="贈る" variant="accent" confirm={`${formatPt(l.price)}で贈りますか？`} className="mt-1 flex flex-col gap-1">
+                      <input type="hidden" name="listingId" value={l.id} />
+                      <RecipientFields withMessage />
+                    </ActionForm>
+                  </details>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

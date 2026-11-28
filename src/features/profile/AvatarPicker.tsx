@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { sb } from "@/client/supabase";
 
 const SIZE = 256;
@@ -24,6 +24,15 @@ export function AvatarPicker({ userId, initial, initialLetter }: { userId: strin
   const [url, setUrl] = useState(initial ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [autoSave, setAutoSave] = useState(false);
+  const hidden = useRef<HTMLInputElement>(null);
+
+  // 画像を選んだら、そのまま保存まで行う（「保存」の押し忘れを防ぐ）
+  useEffect(() => {
+    if (!autoSave) return;
+    setAutoSave(false);
+    hidden.current?.form?.requestSubmit();
+  }, [autoSave, url]);
 
   return (
     <div className="flex items-center gap-3">
@@ -56,6 +65,7 @@ export function AvatarPicker({ userId, initial, initialLetter }: { userId: strin
                 if (up.error) throw new Error(up.error.message);
                 const pub = sb().storage.from("oshi-avatars").getPublicUrl(path).data.publicUrl;
                 setUrl(`${pub}?v=${Date.now()}`);
+                setAutoSave(true);
               } catch (x) {
                 setErr(x instanceof Error ? `アップロードできませんでした（${x.message}）` : "アップロードできませんでした");
               } finally {
@@ -65,14 +75,21 @@ export function AvatarPicker({ userId, initial, initialLetter }: { userId: strin
           />
         </label>
         {url && (
-          <button type="button" className="link text-left text-xs" onClick={() => setUrl("")}>
+          <button
+            type="button"
+            className="link text-left text-xs"
+            onClick={() => {
+              setUrl("");
+              setAutoSave(true);
+            }}
+          >
             アイコンを外す
           </button>
         )}
-        <span className="text-xs text-sub">選んだあと「保存」を押してください</span>
+        <span className="text-xs text-sub">選ぶとすぐ反映されます</span>
         {err && <span className="text-xs text-accent-ink">{err}</span>}
       </div>
-      <input type="hidden" name="avatar_url" value={url} />
+      <input ref={hidden} type="hidden" name="avatar_url" value={url} />
     </div>
   );
 }

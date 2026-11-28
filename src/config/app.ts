@@ -6,9 +6,13 @@ export const STICKER_BUCKET = "oshi-stickers";
 export const PUBLIC_PATHS = ["/login", "/signup", "/reset", "/auth"];
 
 export const DEXES = [
-  { slug: "main", name: "メイン" },
-  { slug: "elite", name: "精鋭" },
+  { slug: "main", name: "メイン", hidden: false },
+  // 精鋭図鑑は中身がないあいだ画面に出さない（URL は残す）
+  { slug: "elite", name: "精鋭", hidden: true },
 ] as const;
+
+/** 画面に出す図鑑 */
+export const VISIBLE_DEXES = DEXES.filter((d) => !d.hidden);
 
 export const RANKING_METRICS = [
   { key: "charm", label: "魅力値" },
